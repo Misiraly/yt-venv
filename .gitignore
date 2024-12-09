@@ -1,0 +1,19 @@
+__pycache__/
+Lib/
+search_trial/
+Scripts/
+
+music_lib.txt
+music_lib - arch.txt
+
+data/music_lib - arch.txt
+data/music_lib.txt
+data/music_libadsa.txt
+data/music_table.csv
+data/music_table - Copy.csv
+
+pyvenv.cfg
+
+test*.py
+
+z_develop_misc.txt
