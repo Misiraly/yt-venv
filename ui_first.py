@@ -4,6 +4,7 @@ from multiprocessing import Process, Value
 
 import lib_sorter as ls
 from modules import formatter
+import constant_values as cv
 
 STATUS_ICON = {
     "p": "(||)",
@@ -192,7 +193,7 @@ def formatted_time(seconds, is_long=False):
     return f"{hour}:{minute}:{sec}"
 
 
-def player_info(title, seconds, info_length=60, isplaylist=False):
+def player_info(title, seconds, isplaylist, info_length=60):
     """Prints necessary info about a song.
 
     Parameters
@@ -245,7 +246,7 @@ def player_loop(media, v_duration, v: Value, t_v: Value):
     Bar = ProgressBar(v_duration, media)
     while key not in EXIT_CHAR:
         t_v.value = media.get_time() / 1000
-        if t_v.value > 60:
+        if t_v.value / v_duration > cv.REL_W_LIMIT or t_v.value > cv.ABS_W_LIMIT:
             watched = True
         if key == "p":
             # pause
@@ -271,7 +272,7 @@ def player_loop(media, v_duration, v: Value, t_v: Value):
     return watched
 
 
-def cli_gui(v_title, v_duration, media, isplaylist=False):
+def cli_gui(v_title, v_duration, media, isplaylist):
     """This handles user inputs and graphic output for the song being played.
 
     Parameters
@@ -287,9 +288,10 @@ def cli_gui(v_title, v_duration, media, isplaylist=False):
     -------
 
     """
-    player_info(v_title, v_duration, isplaylist=isplaylist)
+    player_info(v_title, v_duration, isplaylist)
     key = "n"
     c_time = 0
+    post_vars = {}
     # variable accessible by parallel processes
     v = Value("u", key)
     t_v = Value("f", c_time)
@@ -304,14 +306,15 @@ def cli_gui(v_title, v_duration, media, isplaylist=False):
     )
     p_ask.start()
     p_check_end.start()
-    watched = player_loop(media, v_duration, v, t_v)
+    post_vars['watched'] = player_loop(media, v_duration, v, t_v)
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()
     p_check_end.join()
     media.stop()
     print("\nstoppeth")
-    return v.value
+    post_vars['breaker'] = v.value
+    return post_vars
 
 
 class BaseInterface:
@@ -332,9 +335,9 @@ class BaseInterface:
     page["prompt"] = ["[>] URL or song Number [>]: "]
     page["closer"] = [
         "\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***",
-        "-" * 80 + "\n",
+        "-" * cv.SCR_L + "\n",
     ]
-    page_width = 80
+    page_width = cv.SCR_L
     song = {
         "title": "dummy",
         "url": "https://www.youtube.com/watch?v=fWh6J5Tg274",
@@ -372,6 +375,9 @@ class BaseInterface:
             )
         self.page["body"] = tst
 
+    def refresh_article(self):
+        self.table = ls.pull_csv_as_df()
+
     def show_article(self):
         """Prints the library as arranged in `self.double_table()`, and assigns
         it to the object.
@@ -402,6 +408,19 @@ class BaseInterface:
         -------
 
         """
-        df = self.table.sort_values(by="add_date", ascending=False)
-        new_article = df["title"].iloc[::-1]
-        print(new_article.to_string())
+        df = self.table.sort_values(by="add_date")
+        print(df.to_string(columns=["title"], max_colwidth=cv.SCR_L - 15))
+
+    def show_article_by_watched(self):
+        """Prints the library arranged from latest and newest based on the date
+        they were added to the library. The newest is thus on the bottom.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
+        df = self.table.sort_values(by="watched")
+        print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))

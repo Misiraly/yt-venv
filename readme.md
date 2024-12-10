@@ -9,18 +9,23 @@ Really not optimised for others to use. But you can give it a try.
  - somehow make it happen, that you are able to run the `yt.py` script. That is
  the main one. Paths will be a problem I think. What works for me is to run the
  script with these batch commands:  
-    `cd C:\<your path>\yt-player`  
-    `C:\<path to the yt-player environment>\python.exe C:\<your path>\yt-player\yt.py`  
+    `cd C:\<your path>\yt-venv`  
+    `C:\<path to the yt-venv environment>\python.exe C:\<your path>\yt-venv\yt.py`  
 
 Commands to use in the program:
 -------------------------------
-you can input these commands to do stuff:
- - ser :: search for song title
- - del :: delete a song -- specify index
- - correct title :: remove unusual characters from title  -- specify index
- - tab :: print the list of songs
- - date :: print a list where the songs are arranged by date, latest at the bottom
- - r :: replay a song
- - single :: play a url without adding it to the library
- - help :: prints this list
- - random :: doesn't work, don't use
+  - ser :: search for song
+  - del :: delete a song
+  - correct title :: remove unusual characters from title
+  - rename title :: rename title
+  - tab :: print the list of songs
+  - date :: print songs arranged by date, descending
+  - freq :: print songs arranged by popularity, descending
+  - r :: replay a song
+  - single :: play a url without adding it to the library
+  - random :: play a random song. Use '--force' to play it automatically
+  - shuffle :: shuffles all the songs into one playlist, plays it
+  - by_date :: play the songs by date of addition to the list
+  - `,` :: playlist of song numbers divided by a comma, eg `12, 3, 8`
+  - autist :: play the same song over and over again
+  - help :: prints this list

@@ -6,6 +6,7 @@ from yt_dlp.utils import DownloadError
 import lib_sorter as ls
 import side_functions as sf
 import ui_first
+import constant_values as cv
 
 EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}
@@ -25,18 +26,11 @@ def article_decorator(func):
     return wrapper
 
 
-def divider():
-    """
-    Use it to visually divide blocks on the terminal.
-    """
-    print("-" * 80)
-
-
 def divide_decorator(func):
     def wrapper(*args, **kwargs):
-        divider()
+        print("-" * cv.SCR_L)
         func(*args, **kwargs)
-        divider()
+        print("-" * cv.SCR_L)
     return wrapper
 
 
@@ -53,7 +47,17 @@ def playTheSong(url):
     return song_info, media
 
 
-def play_on_list(cmd_input, bu):
+def play_and_write(title, duration, media, isplaylist=False, write=False):
+    """
+    Initiate the playing, and add additional info to the database if needed.
+    """
+    post_vars = ui_first.cli_gui(title, duration, media, isplaylist)
+    if post_vars['watched'] and not write:
+        ls.increase_watched(title)
+    return post_vars['breaker']
+
+
+def play_on_list(bu, cmd_input):
     """
     Plays a song that is tracked by our library.
     """
@@ -63,13 +67,13 @@ def play_on_list(cmd_input, bu):
     else:
         bu.song = bu.table.iloc[cmd_num]
         song_info, media = playTheSong(bu.song["url"])
-        ui_first.cli_gui(bu.song["title"], song_info["duration"], media)
+        play_and_write(bu.song["title"], song_info["duration"], media)
         bu.print_closer()
         bu.show_article()
 
 
 def play_playlist(playlist, bu, info):
-    print(info.center(80, "-"))
+    print(info.center(cv.SCR_L, "-"))
     for el in playlist:
         bu.song = bu.table.iloc[el]
         title = bu.song["title"]
@@ -81,7 +85,7 @@ def play_playlist(playlist, bu, info):
             print(f"\ncant play this fucking song: {title}!")
             print("Error in the pleilist... going further!!...")
             continue
-        breaker = ui_first.cli_gui(
+        breaker = play_and_write(
             bu.song["title"], song_info["duration"], media, isplaylist=True
         )
         bu.print_closer()
@@ -93,7 +97,7 @@ def play_playlist(playlist, bu, info):
 
 # TODO: ALMOS SAME AS ABOVE!
 def autist_shuffle(song_no, bu):
-    print("AUTIST SHUFFLE".center(80, "-"))
+    print("AUTIST SHUFFLE".center(cv.SCR_L, "-"))
     bu.song = bu.table.iloc[song_no]
     title = bu.song["title"]
     print(f"[run: {title.lower()}]")
@@ -107,10 +111,10 @@ def autist_shuffle(song_no, bu):
             print("Error in the autist pleilist... !!...")
             tries += 1
             if tries > 2:
-                print("song gives error 3 times, it's over".center(80,"*"))
+                print("song gives error 3 times, it's over".center(cv.SCR_L,"*"))
                 break
             continue
-        breaker = ui_first.cli_gui(
+        breaker = play_and_write(
             bu.song["title"], song_info["duration"], media, isplaylist=True
         )
         bu.print_closer()
@@ -119,8 +123,7 @@ def autist_shuffle(song_no, bu):
     print("\nthe westphalen... its over...\n")
 
 
-
-def play_new(cmd_input, bu):
+def play_new(bu, cmd_input):
     """
     Play a song not yet tracked by our library.
     """
@@ -132,22 +135,22 @@ def play_new(cmd_input, bu):
         v_title = song_info["title"]
         v_duration = song_info["duration"]
         bu.song = {"title": v_title, "url": url, "duration": v_duration}
-        ui_first.cli_gui(v_title, v_duration, media)
         ls.write_table_to_csv(v_title, url, ui_first.formatted_time(v_duration))
+        play_and_write(v_title, v_duration, media) # TODO: the order of FIRST writing to table and THEN playing is very important and is a risk
         bu.print_closer()
         bu.show_article()
 
 
-def init_player(cmd_input, bu):
+def init_player(bu, cmd_input):
     """
     If we get an integer input, we assume it refers to a song already in our
     library. Otherwise we handle it as a new song that needs to be added to
     the library.
     """
     if cmd_input.isnumeric():
-        play_on_list(cmd_input, bu)
+        play_on_list(bu, cmd_input)
     else:
-        play_new(cmd_input, bu)
+        play_new(bu, cmd_input)
 
 
 @article_decorator
@@ -160,7 +163,7 @@ def play_random_force(bu):
     title = bu.song["title"]
     print(f"\nPlaying a random song... [{title}]\n")
     song_info, media = playTheSong(bu.song["url"])
-    ui_first.cli_gui(bu.song["title"], song_info["duration"], media)
+    play_and_write(bu.song["title"], song_info["duration"], media)
     # bu.print_closer()
     # bu.show_article()
 
@@ -182,7 +185,7 @@ def play_random(bu):
             playit = str(songs.index[0])
             print(f"\nPlaying a random song... [{songs.iloc[0]["title"]}]\n")
         break
-    init_player(playit, bu)
+    init_player(bu, playit)
 
 
 @article_decorator
@@ -192,7 +195,7 @@ def replay(bu):
     added to the library yet, it means it will be added.
     """
     song_info, media = playTheSong(bu.song["url"])
-    ui_first.cli_gui(bu.song["title"], song_info["duration"], media)
+    play_and_write(bu.song["title"], song_info["duration"], media)
     # bu.print_closer()
     # bu.show_article()
 
@@ -218,7 +221,7 @@ def play_autist(bu, cmd_input):
         autist_shuffle(int(song_no), bu)
     else:
         print("\n")
-        print(f"Parsed value \"{song_no}\" is not numeric!".center(80, "*"))
+        print(f"Parsed value \"{song_no}\" is not numeric!".center(cv.SCR_L, "*"))
         print("\n")
 
 
@@ -261,7 +264,7 @@ def single_play(bu):
             "url": url,
             "duration": song_info["duration"],
         }
-        ui_first.cli_gui(v_title, v_duration, media)
+        play_and_write(v_title, v_duration, media, write=False)
         bu.print_closer()
         bu.show_article()
 
@@ -322,21 +325,24 @@ def command_help():
     print("  - correct title :: remove unusual characters from title")
     print("  - rename title :: rename title")
     print("  - tab :: print the list of songs")
-    print("  - date :: print a list where the songs are arranged by date, descending")
+    print("  - date :: print songs are by date, descending")
+    print("  - freq :: print songs arranged by popularity, descending")
     print("  - r :: replay a song")
     print("  - single :: play a url without adding it to the library")
-    print("  - help :: prints this list")
     print("  - random :: play a random song. Use '--force' to play it automatically")
     print("  - shuffle :: shuffles all the songs into one playlist, plays it")
     print("  - by_date :: play the songs by date of addition to the list")
+    print("  - `,` :: playlist of song numbers divided by a comma, eg `12, 3, 8`")
     print("  - autist :: play the same song over and over again")
+    print("  - help :: prints this list")
 
 
 def decision_tree(bu):
     """
     Decides what to execute given an input from the terminal.
     """
-    print("[ser : del : correct title : rename title : tab : date]")
+    bu.refresh_article()
+    print("[ser : del : correct title : rename title : tab : date : freq]")
     print("[r : single : random : shuffle : autist : `,` : help]")
     prompt = "[>] URL or song Number /quit - 'q'/ [>]: "
     cmd_input = input(prompt)
@@ -354,14 +360,16 @@ def decision_tree(bu):
         bu.show_article()
     elif cmd_input == "date":
         bu.show_article_by_date()
+    elif cmd_input == "freq":
+        bu.show_article_by_watched()
+    elif cmd_input == "help":
+        command_help()
     else:
         try:
             if cmd_input == "r":
                 replay(bu=bu)
             elif cmd_input == "single":
                 single_play(bu)
-            elif cmd_input == "help":
-                command_help()
             elif cmd_input == "random":
                 play_random(bu=bu)
             elif cmd_input == "random --force":
@@ -375,7 +383,7 @@ def decision_tree(bu):
             elif "autist" in cmd_input[:len("autist")]:
                 play_autist(bu, cmd_input)
             else:
-                init_player(cmd_input, bu)
+                init_player(bu, cmd_input)
         except DownloadError:
             print(f"cent lpay this: {bu.song['title']}... fuuuuU!")
             print("\nGoing further down the road...")

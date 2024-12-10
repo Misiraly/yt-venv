@@ -162,7 +162,7 @@ def sorted_by_word(s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5):
     lib :: a dataframe that contains the titles (search pool)
     cutoff :: number matches to display
     """
-    df = lib
+    df = lib.copy(deep=True)
     df["dis"] = lib.apply(
         lambda row: token_distance_list(s_word, row[col]), axis=1
     )

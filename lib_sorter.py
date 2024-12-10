@@ -3,16 +3,8 @@ from datetime import datetime
 import pandas as pd
 import regex as re
 
-_DELIM = " -- "
 music_table = "data/music_table.csv"
 # should have format as in "data/test-table.csv"
-
-
-def divider():
-    """
-    Use it to visually divide blocks on the terminal.
-    """
-    print("-" * 80)
 
 
 def pull_csv_as_df():
@@ -27,7 +19,8 @@ def write_table_to_csv(title_in, url, duration):
     """
     df = pull_csv_as_df()
     if title_in not in df["title"].values:
-        df.loc[len(df.index)] = [title_in, url, duration, str(datetime.now())]
+        # TODO: do not use a list but a safer dictionary, so if column doesn't exist, it wont throw a hissy fit
+        df.loc[len(df.index)] = [title_in, url, duration, str(datetime.now()), 0]
         # sort_values sorts all capital letters before lowercase letters...
         # we do not want this.
         out_df = df.sort_values(
@@ -52,3 +45,12 @@ def del_from_csv(row_index):
     df = pull_csv_as_df()
     new_df = df.drop([row_index]).reset_index(drop=True)
     new_df.to_csv(music_table)
+
+
+def increase_watched(title):
+    """
+    Increases the watchedness of a given song identified by row index.
+    """
+    df = pull_csv_as_df()
+    df.loc[df['title'] == title, 'watched'] += 1
+    df.to_csv(music_table)
