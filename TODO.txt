@@ -1,6 +1,8 @@
 # TODO
- - download & store songs in a library instead of downloading them everytime,
- read and play already existing songs from the library
+ - tidy up existing code:
+   - download/playing mechanism is ugly, risky and bloated
+   - printing mechanism is not too coherent
+   - ui_first objects' printing might be very inefficient
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
  - possibilty to jump to timestamps, 10s back-forth
@@ -12,5 +14,7 @@
    (- maybe tab that slates through periods as well)
 
 # DONE
- - random: gives 5 random choices, first is automatically chosen (=='y') # DONE
- - delhusa djon: plays Nika se Perimeno over and over # DONE
+ - random: gives 5 random choices, first is automatically chosen (=='y')
+ - delhusa djon: plays Nika se Perimeno over and over
+ - download & store songs in a library instead of downloading them everytime,
+ read and play already existing songs from the library

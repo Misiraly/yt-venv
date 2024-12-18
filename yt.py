@@ -10,12 +10,8 @@ import lib_sorter as ls
 import ui_first
 from modules import search_text as st
 
-import time
-
 EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}
-
-COMMAND_EXECUTABLES = {}
 
 LIBRARY = "library"
 
@@ -277,6 +273,11 @@ def play_manual_playlist(bu, cmd_input):
     for song_no in songs:
         if song_no.isnumeric() and int(song_no) in bu.table.index.values:
             playlist.append(int(song_no))
+        else:
+            print()
+            print("[WARNING] Faulty element within the list!")
+            print(f"Element in question: `{song_no}`")
+            print()
     play_playlist(playlist, bu, "MY PLAYLIST. FUCK OFF WE ARE FULL.")
 
 

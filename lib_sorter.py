@@ -22,7 +22,14 @@ def write_table_to_csv(title_in, url, duration):
     df = pull_csv_as_df()
     if title_in not in df["title"].values:
         # TODO: do not use a list but a safer dictionary, so if column doesn't exist, it wont throw a hissy fit
-        df.loc[len(df.index)] = [title_in, url, duration, str(datetime.now()), 0, cv.NO_PATH]
+        df.loc[len(df.index)] = [
+            title_in,
+            url,
+            duration,
+            str(datetime.now()),
+            0,
+            cv.NO_PATH,
+        ]
         # sort_values sorts all capital letters before lowercase letters...
         # we do not want this.
         out_df = df.sort_values(
