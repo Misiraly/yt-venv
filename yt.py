@@ -1,15 +1,14 @@
+import os.path
+
 import numpy as np
 from vlc import MediaPlayer
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
-from modules import search_text as st
-
-import os.path
-
+import constant_values as cv
 import lib_sorter as ls
 import ui_first
-import constant_values as cv
+from modules import search_text as st
 
 EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}

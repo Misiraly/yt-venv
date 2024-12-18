@@ -1,10 +1,10 @@
-from msvcrt import kbhit, getch
 import time
+from msvcrt import getch, kbhit
 from multiprocessing import Process, Value
 
+import constant_values as cv
 import lib_sorter as ls
 from modules import formatter
-import constant_values as cv
 
 STATUS_ICON = {
     "p": "(||)",

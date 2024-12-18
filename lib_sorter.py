@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import regex as re
+
 import constant_values as cv
 
 music_table = "data/music_table.csv"

@@ -1,15 +1,12 @@
 __pycache__/
-Lib/
 library/
 search_trial/
-Scripts/
 
 data/music_lib*
 data/music_table*.csv
 
-pyvenv.cfg
-
 test*.py
 scratch*.py
 
-z_develop_misc.txt
+# this might be too much haha :D
+*dev*.*
