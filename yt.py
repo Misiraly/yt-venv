@@ -10,6 +10,8 @@ import lib_sorter as ls
 import ui_first
 from modules import search_text as st
 
+import time
+
 EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}
 
@@ -19,8 +21,8 @@ LIBRARY = "library"
 
 
 def _root_prompt(prompt):
-    cmd_input = input(prompt).lower()
-    if cmd_input in EXIT_CHARS:
+    cmd_input = input(prompt)
+    if cmd_input.lower() in EXIT_CHARS:
         exit()
     return cmd_input
 
@@ -172,6 +174,7 @@ def play_new(bu, cmd_input):
         search_table(cmd_input)
     else:
         url = cmd_input
+        print(url)
         song_info, media = playTheSong(url)
         v_title = song_info["title"]
         v_duration = song_info["duration"]
