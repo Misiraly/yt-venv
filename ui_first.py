@@ -1,4 +1,4 @@
-import msvcrt
+from msvcrt import kbhit, getch
 import time
 from multiprocessing import Process, Value
 
@@ -11,32 +11,12 @@ STATUS_ICON = {
     "s": "(■) ",
     "l": "(►) ",
     "r": "(►) ",
-    "status_l": 4,
     "q": "(■) ",
     "x": "(■)",
 }
+STATUS_L = 4
 STATUS_CHAR = {"p", "s", "l", "r", "q", "n", "x"}
 EXIT_CHAR = {"q", "x"}
-
-
-def count(seconds, v: Value):
-    """Count down and pass exit code to inter-process variable.
-
-    Parameters
-    ----------
-    seconds : int
-        number of seconds to count down
-
-    v: Value :
-        inter-process variable carrying the state of playing
-    """
-    i = seconds
-    while v.value not in EXIT_CHAR and i > 0:
-        time.sleep(0.125)
-        if v.value != "b":
-            i -= 0.125
-    key = "q"
-    v.value = key
 
 
 def check_end(seconds, v: Value, t_v: Value):
@@ -74,10 +54,10 @@ def ask(v: Value):
     while key not in EXIT_CHAR:
         # if we don't check for this below, then the Process actually DOESN'T
         # STOP or FUCKS UP or smth even after TERMINATING IT. Cuh
-        if msvcrt.kbhit():
+        if kbhit():
             try:
-                key = msvcrt.getch().decode("ASCII").lower()
-            except:
+                key = getch().decode("ASCII").lower()
+            except UnicodeDecodeError:
                 # non-ascii char inputted
                 pass
             v.value = key
@@ -106,7 +86,7 @@ class ProgressBar:
         self.full_time = formatted_time(seconds, self.is_video_long)
         subtract = (
             len(left_side)
-            + STATUS_ICON["status_l"]
+            + STATUS_L
             + 1
             + len(right_side)
             + len(self.time_bar)
@@ -121,17 +101,8 @@ class ProgressBar:
         self.key = "l"
 
     def print_bar(self, key):
-        """Print a progress bar based on the elapsed time.
-
-        Parameters
-        ----------
-        key :
-            the last key pressed by the user
-
-
-        Returns
-        -------
-
+        """
+        Print a progress bar based on the elapsed time.
         """
         _c_time = self.media.get_time() / 1000
         ratio = _c_time / self.seconds
@@ -159,11 +130,15 @@ def get_seconds(formatted_input: str = 0):
     -------
 
     """
+    if not isinstance(formatted_input, str):
+        return formatted_input
     if formatted_input == 0:
         print("[INFO] This has no length.")
         return 0
     _temp = formatted_input.split(":")
-    return int(_temp[0]) * 3600 + int(_temp[1]) * 60 + int(_temp[2])
+    if len(_temp) > 2:
+        return int(_temp[0]) * 3600 + int(_temp[1]) * 60 + int(_temp[2])
+    return int(_temp[0]) * 60 + int(_temp[1])
 
 
 def formatted_time(seconds, is_long=False):
@@ -172,10 +147,10 @@ def formatted_time(seconds, is_long=False):
     Parameters
     ----------
     seconds : integer
-        whether seconds are more than an hour
 
     is_long : boolean
          (Default value = False)
+        whether seconds are more than an hour
 
     Returns
     -------
@@ -193,7 +168,7 @@ def formatted_time(seconds, is_long=False):
     return f"{hour}:{minute}:{sec}"
 
 
-def player_info(title, seconds, isplaylist, info_length=60):
+def player_info(title, seconds, isplaylist, info_length=cv.PLR_L):
     """Prints necessary info about a song.
 
     Parameters
@@ -272,22 +247,9 @@ def player_loop(media, v_duration, v: Value, t_v: Value):
     return watched
 
 
-def cli_gui(v_title, v_duration, media, isplaylist):
-    """This handles user inputs and graphic output for the song being played.
-
-    Parameters
-    ----------
-    v_title :
-
-    v_duration :
-
-    media :
-
-
-    Returns
-    -------
-
-    """
+def cli_gui(v_title, in_duration, media, isplaylist):
+    """Handles user inputs and graphic output for the song being played."""
+    v_duration = get_seconds(in_duration)
     player_info(v_title, v_duration, isplaylist)
     key = "n"
     c_time = 0
@@ -306,14 +268,14 @@ def cli_gui(v_title, v_duration, media, isplaylist):
     )
     p_ask.start()
     p_check_end.start()
-    post_vars['watched'] = player_loop(media, v_duration, v, t_v)
+    post_vars["watched"] = player_loop(media, v_duration, v, t_v)
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()
     p_check_end.join()
     media.stop()
     print("\nstoppeth")
-    post_vars['breaker'] = v.value
+    post_vars["breaker"] = v.value
     return post_vars
 
 
@@ -329,8 +291,8 @@ class BaseInterface:
 
     """
 
-    page = dict()
-    page["header"] = ["\n"] + formatter.abc_rower("  PYTHON MUSIC") + ["\n"]
+    page = {}
+    page["header"] = ["\n"] + formatter.abc_rower("    PYTHON MUSIC") + ["\n"]
     page["body"] = list()
     page["prompt"] = ["[>] URL or song Number [>]: "]
     page["closer"] = [
@@ -344,8 +306,7 @@ class BaseInterface:
     }
     wspace = " "
     ell = "..."
-    nell = "   "
-    playlist = list()
+    playlist = []
 
     def __init__(self):
         self.table = ls.pull_csv_as_df()
@@ -360,7 +321,7 @@ class BaseInterface:
         half = len(self.table.index) // 2 + len(self.table.index) % 2
         part_line = self.page_width // 2
         title_l = part_line - len(self.wspace) - len(self.ell)
-        tst = ["" for i in range(half)]  # two-side-table :3
+        tst = ["" for i in range(half)]  # two-side-table
         titles = self.table["title"].values.tolist()
         for i, song in enumerate(titles):
             title = song.ljust(title_l)
@@ -379,15 +340,9 @@ class BaseInterface:
         self.table = ls.pull_csv_as_df()
 
     def show_article(self):
-        """Prints the library as arranged in `self.double_table()`, and assigns
+        """
+        Prints the library as arranged in `self.double_table()`, and assigns
         it to the object.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self.table = ls.pull_csv_as_df()
         self.double_table()
@@ -398,29 +353,17 @@ class BaseInterface:
             print(line)
 
     def show_article_by_date(self):
-        """Prints the library arranged from latest and newest based on the date
+        """
+        Prints the library arranged from latest and newest based on the date
         they were added to the library. The newest is thus on the bottom.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         df = self.table.sort_values(by="add_date")
         print(df.to_string(columns=["title"], max_colwidth=cv.SCR_L - 15))
 
     def show_article_by_watched(self):
-        """Prints the library arranged from latest and newest based on the date
+        """
+        Prints the library arranged from latest and newest based on the date
         they were added to the library. The newest is thus on the bottom.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         df = self.table.sort_values(by="watched")
         print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))

@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import regex as re
+import constant_values as cv
 
 music_table = "data/music_table.csv"
 # should have format as in "data/test-table.csv"
@@ -20,7 +21,7 @@ def write_table_to_csv(title_in, url, duration):
     df = pull_csv_as_df()
     if title_in not in df["title"].values:
         # TODO: do not use a list but a safer dictionary, so if column doesn't exist, it wont throw a hissy fit
-        df.loc[len(df.index)] = [title_in, url, duration, str(datetime.now()), 0]
+        df.loc[len(df.index)] = [title_in, url, duration, str(datetime.now()), 0, cv.NO_PATH]
         # sort_values sorts all capital letters before lowercase letters...
         # we do not want this.
         out_df = df.sort_values(
@@ -52,5 +53,14 @@ def increase_watched(title):
     Increases the watchedness of a given song identified by row index.
     """
     df = pull_csv_as_df()
-    df.loc[df['title'] == title, 'watched'] += 1
+    df.loc[df["title"] == title, "watched"] += 1
+    df.to_csv(music_table)
+
+
+def add_attribute(title, attribute, attribute_col):
+    """
+    Adds path of download to song.
+    """
+    df = pull_csv_as_df()
+    df.loc[df["title"] == title, attribute_col] = attribute
     df.to_csv(music_table)

@@ -88,7 +88,7 @@ def qs_df(df, col, leq, cutoff=5):
     """
     ilist = df.index.values.tolist()
     dislist = df[col].values.tolist()
-    tosort = [[ilist[i], dislist[i]] for i in range(len(ilist))]
+    tosort = list(zip(ilist, dislist))
     sortlist = qs_eng(tosort, leq)
     ilist = [el[0] for el in sortlist[:cutoff]]
     sdf = df.loc[ilist]
@@ -122,7 +122,7 @@ def tokenize_neighbor(streeng):
     ie
     "what are# yoű)dö^ing?"
     -->
-    ["what","are","you",doing","whatare","areyou","youdoing"]
+    ["what","are","you","doing","whatare","areyou","youdoing"]
     """
     string = streeng.lower()
     for char in SEP_CHAR:
@@ -131,7 +131,7 @@ def tokenize_neighbor(streeng):
         string = string.replace(char, "")
     for char in REPLACE_CHAR:
         string = string.replace(char, REPLACE_CHAR[char])
-    tokens = string.split(" ")
+    tokens = string.split()
     tokens = [token for token in tokens if token != ""]
     neigh_tokens = [tokens[i] + tokens[i + 1] for i in range(len(tokens) - 1)]
     return tokens + neigh_tokens
@@ -163,9 +163,7 @@ def sorted_by_word(s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5):
     cutoff :: number matches to display
     """
     df = lib.copy(deep=True)
-    df["dis"] = lib.apply(
-        lambda row: token_distance_list(s_word, row[col]), axis=1
-    )
+    df["dis"] = lib.apply(lambda row: token_distance_list(s_word, row[col]), axis=1)
     if cutoff > len(df.index):
         print(
             f"[WARNING] Cutoff value ({cutoff}) larger than library length,"

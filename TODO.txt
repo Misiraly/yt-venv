@@ -1,9 +1,16 @@
-Implement entry points:
- - random: gives 5 random choices, first is automatically chosen (=='y')
- - delhusa djon: plays Nika se Perimeno over and over
+# TODO
+ - download & store songs in a library instead of downloading them everytime,
+ read and play already existing songs from the library
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
- - add "popularity" counter: # of times songs has been listened to
+ - possibilty to jump to timestamps, 10s back-forth
+
+# Partially DONE
+ - add "popularity" counter: # of times songs has been listened to 
    (- maybe weighed by time? or slated by periods (weeks, months, year...))
  - add "most listened to" tab: songs in order of number of listens
    (- maybe tab that slates through periods as well)
+
+# DONE
+ - random: gives 5 random choices, first is automatically chosen (=='y') # DONE
+ - delhusa djon: plays Nika se Perimeno over and over # DONE

@@ -27,21 +27,19 @@ def raw_abc_to_abc():
     with open(abc, "r", encoding="utf-8") as r:
         raw_forms = r.read()
     raw_forms = raw_forms.split("#end#")
-    raw_forms.pop(-1)
     letters = {}
-    for form in raw_forms:
+    for form in raw_forms[:-1]:
         split_form = form.split("\n")
         split_form = [line for line in split_form if line != ""]
+        if len(split_form) >= 5:
+            raise (f"Character is taller than 3 lines in the abc {split_form}")
         # print(split_form)
         key = split_form[0][1]
-        assert (
-            len(split_form) < 5
-        ), f"Character is taller than 3 lines in the abc {split_form}"
-        max_len = max([len(line) for line in split_form[1:]])
+        max_len = max(len(line) for line in split_form[1:])
         letters[key] = [
-            split_form[1] + " " * (max_len - len(split_form[1])),
-            split_form[2] + " " * (max_len - len(split_form[2])),
-            split_form[3] + " " * (max_len - len(split_form[3])),
+            split_form[1].ljust(max_len),
+            split_form[2].ljust(max_len),
+            split_form[3].ljust(max_len),
         ]
         # print(letters[key])
     return letters
