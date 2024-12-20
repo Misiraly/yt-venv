@@ -1,4 +1,4 @@
-import os.path
+import os
 
 import numpy as np
 from vlc import MediaPlayer
@@ -14,6 +14,7 @@ EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}
 
 LIBRARY = "library"
+EXT = "ogg"
 
 
 def _root_prompt(prompt):
@@ -41,7 +42,6 @@ def divide_decorator(func):
         print("-" * cv.SCR_L)
         func(*args, **kwargs)
         print("-" * cv.SCR_L)
-
     return wrapper
 
 
@@ -60,16 +60,13 @@ def playTheSong(url=None, path=cv.NO_PATH):
 
 
 def downloadSong(url, title=None):
-    ext = "ogg"
-    path = f"{LIBRARY}/{title}.{ext}"
+    n_title = ls.correct_title(title)
+    path = f"{LIBRARY}/{n_title}.{EXT}"
     print()
     print("Adding new song to library...")
     print(path)
     download = not os.path.isfile(path)
-    if download:
-        title = ls.correct_title(title)
-        path = f"{LIBRARY}/{title}.{ext}"
-    else:
+    if not download:
         print("Song already exists!")
     ydl_opts = {
         "extract_audio": True,
@@ -84,19 +81,41 @@ def downloadSong(url, title=None):
     return path, song_info
 
 
+def playForReal(url, song=None):
+    if song is not None:
+        if song['path'] != cv.NO_PATH:
+            return None, MediaPlayer(song['path'])
+        path = f"{LIBRARY}/{song['title']}.{EXT}"
+    else:
+        path = f"{LIBRARY}/%(title)s.{EXT}"
+    ydl_opts = {
+        "extract_audio": True,
+        "format": "bestaudio",
+        "no_check_certificate": True,
+        'outtmpl': path
+    }
+    with YoutubeDL(ydl_opts) as ydl:
+        song_info = ydl.extract_info(url, download=True)
+        ydl.download(url)
+    title = ls.correct_title(song_info['title'])
+    n_path = f"{LIBRARY}/{title}.{EXT}"
+    os.rename(path, n_path)
+    return song_info, MediaPlayer(n_path)
+
+
 def play_and_write(bu, media, isplaylist=False):
     """
     Initiate the playing, and add additional info to the database if needed.
     """
     song = bu.song
     if song["path"] == cv.NO_PATH or song["duration"] == cv.NO_DURATION:
-        path, song_info = downloadSong(song["url"], song.title)
-        ls.add_attribute(song.title, path, "path")
-        song.at["duration"] = ui_first.formatted_time(song_info["duration"])
-        ls.add_attribute(song.title, song["duration"], "duration")
+        path, song_info = downloadSong(song["url"], song['title'])
+        ls.add_attribute(song['title'], path, "path")
+        song["duration"] = ui_first.formatted_time(song_info["duration"])
+        ls.add_attribute(song['title'], song["duration"], "duration")
     post_vars = ui_first.cli_gui(song["title"], song["duration"], media, isplaylist)
     if post_vars["watched"]:
-        ls.increase_watched(song.title)
+        ls.increase_watched(song['title'])
     return post_vars["breaker"]
 
 
@@ -108,7 +127,7 @@ def play_on_list(bu, cmd_input):
     if cmd_num not in bu.table.index:
         print("[TRY AGAIN], number not on list")
     else:
-        bu.song = bu.table.iloc[cmd_num]
+        bu.song = bu.table.iloc[cmd_num].copy(deep=True)
         _, media = playTheSong(bu.song["url"], bu.song["path"])
         play_and_write(bu, media)
         bu.print_closer()
@@ -118,7 +137,7 @@ def play_on_list(bu, cmd_input):
 def play_playlist(playlist, bu, info):
     print(info.center(cv.SCR_L, "-"))
     for el in playlist:
-        bu.song = bu.table.iloc[el]
+        bu.song = bu.table.iloc[el].copy(deep=True)
         title = bu.song["title"]
         print(f"[nepst: {title.lower()}]")
         # has to handle it here otherwise the playlist breaks
@@ -139,7 +158,7 @@ def play_playlist(playlist, bu, info):
 # TODO: ALMOS SAME AS ABOVE!
 def autist_shuffle(song_no, bu):
     print("AUTIST SHUFFLE".center(cv.SCR_L, "-"))
-    bu.song = bu.table.iloc[song_no]
+    bu.song = bu.table.iloc[song_no].copy(deep=True)
     title = bu.song["title"]
     print(f"[run: {title.lower()}]")
     tries = 0
@@ -174,7 +193,7 @@ def play_new(bu, cmd_input):
         song_info, media = playTheSong(url)
         v_title = song_info["title"]
         v_duration = song_info["duration"]
-        bu.song = {"title": v_title, "url": url, "duration": v_duration, "path": ""}
+        bu.song = {"title": v_title, "url": url, "duration": v_duration, "path": cv.NO_PATH}
         ls.write_table_to_csv(v_title, url, ui_first.formatted_time(v_duration))
         play_and_write(
             bu, media
@@ -201,7 +220,7 @@ def play_random_force(bu):
     Plays a random song that is tracked by our library.
     """
     r = np.random.randint(0, len(bu.table.index))
-    bu.song = bu.table.iloc[r]
+    bu.song = bu.table.iloc[r].copy(deep=True)
     title = bu.song["title"]
     print(f"\nPlaying a random song... [{title}]\n")
     _, media = playTheSong(bu.song["url"], bu.song["path"])
@@ -219,7 +238,7 @@ def play_random(bu):
         rand_choice = np.random.choice(
             len(bu.table.index), 5, replace=False
         )  # TODO: non-hard-coded number of choices?
-        songs = bu.table.iloc[rand_choice]
+        songs = bu.table.iloc[rand_choice].copy(deep=True)
         titles = songs[["title"]]
         print(titles)
         playit = _root_prompt(f"\n>>Play first song on the list?[y/N/r]> ")
@@ -364,7 +383,7 @@ def correct_title(bu):
         if cmd_num not in bu.table.index:
             print("[ERROR], number not on list")
         print("Song to be corrected: ")
-        song = bu.table.iloc[cmd_num]
+        song = bu.table.iloc[cmd_num].copy(deep=True)
         ole_title = song["title"]
         print(f"> {ole_title}")
         if not_sure():
@@ -387,13 +406,13 @@ def rename_title(bu):
         if cmd_num not in bu.table.index:
             print("[ERROR], number not on list")
         print("Song to be renamed: ")
-        song = bu.table.iloc[cmd_num]
+        song = bu.table.iloc[cmd_num].copy(deep=True)
         ole_title = song["title"]
         print(f"> {ole_title}")
         if not_sure():
             return
         else:
-            song = bu.table.iloc[cmd_num]
+            song = bu.table.iloc[cmd_num].copy(deep=True)
             new_title = _root_prompt("New title >")
             if new_title == "":
                 new_title = f"__DEFAULT_{str(np.random.randint(0,1000))}"
