@@ -38,6 +38,27 @@ def write_table_to_csv(title_in, url, duration):
         out_df.to_csv(music_table)
 
 
+def song_to_table_csv(song):
+    """
+    Given the title, url and duration of a song, writes it into the library.
+    The library is saved after sorting by titles.
+    """
+    df = pull_csv_as_df()
+    if song["title"] not in df["title"].values:
+        if "add_date" not in song:
+            song["add_date"] = str(datetime.now())
+        if "watched" not in song:
+            song["watched"] = 0
+        df.loc[len(df.index)] = song
+        # sort_values sorts all capital letters before lowercase letters...
+        # we do not want this.
+        out_df = df.sort_values(
+            by=["title"], key=lambda col: col.str.lower(), ignore_index=True
+        )
+        out_df.to_csv(music_table)
+    # return song
+
+
 def correct_title(title_in):
     """
     Returns a title-string stripped of non-standard characters.
@@ -71,4 +92,11 @@ def add_attribute(title, attribute, attribute_col):
     """
     df = pull_csv_as_df()
     df.loc[df["title"] == title, attribute_col] = attribute
+    df.to_csv(music_table)
+
+
+def fill_attributes(song, cols, values):
+    df = pull_csv_as_df()
+    for col, val in zip(cols, values):
+        df.loc[df["title"] == song["title"], col] = val
     df.to_csv(music_table)

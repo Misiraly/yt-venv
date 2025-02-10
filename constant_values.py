@@ -9,3 +9,6 @@ REL_W_LIMIT = 0.7  # 70%
 # dataframe
 NO_PATH = "No Path"
 NO_DURATION = "No Duration"
+
+# placeholders
+TEMPORARY = "_temporary_file_name_"

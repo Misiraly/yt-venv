@@ -42,16 +42,28 @@ def divide_decorator(func):
         print("-" * cv.SCR_L)
         func(*args, **kwargs)
         print("-" * cv.SCR_L)
+
     return wrapper
 
 
-def playTheSong(url=None, path=cv.NO_PATH):
+def check_title_fix(title, url, s_title):
+    if title == "":
+        print()
+        print("Warning! after renaming the title, we got an empty string!")
+        print(s_title)
+        print(url)
+        new_name = input("Filename to use (if empty, a hash from url will be used): ")
+        title = new_name
+        if new_name == "":
+            title = ls.correct_title(url)
+    return title
+
+
+def playTheSong(url=None):
     """
     Play a video from a given url, and return it as as an object with some
     info about the video.
     """
-    if path != cv.NO_PATH:
-        return None, MediaPlayer(path)
     ydl_opts = {"format": "bestaudio", "no_check_certificate": True}
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=False)
@@ -59,63 +71,71 @@ def playTheSong(url=None, path=cv.NO_PATH):
     return song_info, media
 
 
-def downloadSong(url, title=None):
-    n_title = ls.correct_title(title)
-    path = f"{LIBRARY}/{n_title}.{EXT}"
-    print()
-    print("Adding new song to library...")
-    print(path)
-    download = not os.path.isfile(path)
-    if not download:
-        print("Song already exists!")
-    ydl_opts = {
-        "extract_audio": True,
-        "format": "bestaudio",
-        "outtmpl": path,
-        "no_check_certificate": True,
-    }
-    with YoutubeDL(ydl_opts) as ydl:
-        song_info = ydl.extract_info(url, download=True)
-        if download:
-            ydl.download(url)
-    return path, song_info
-
-
-def playForReal(url, song=None):
-    if song is not None:
-        if song['path'] != cv.NO_PATH:
-            return None, MediaPlayer(song['path'])
-        path = f"{LIBRARY}/{song['title']}.{EXT}"
+def playExisting(bu):
+    song = dict(bu.song)
+    extract = song["duration"] == cv.NO_DURATION
+    download = song["path"] == cv.NO_PATH
+    if download:
+        title = ls.correct_title(song["title"])
+        title = check_title_fix(title, song["url"], song["title"])
+        path = f"{LIBRARY}/{title}.{EXT}"
     else:
-        path = f"{LIBRARY}/%(title)s.{EXT}"
+        path = song["path"]
     ydl_opts = {
         "extract_audio": True,
         "format": "bestaudio",
         "no_check_certificate": True,
-        'outtmpl': path
+        "outtmpl": path,
+    }
+    if extract or download:
+        with YoutubeDL(ydl_opts) as ydl:
+            song_info = ydl.extract_info(song["url"], download=True)
+            if download:
+                ydl.download(song["url"])
+                song["path"] = path
+                ls.add_attribute(song["title"], path, "path")
+        if extract:
+            song["duration"] = ui_first.formatted_time(song_info["duration"])
+            ls.add_attribute(song["title"], song["duration"], "duration")
+    bu.song = song
+    return MediaPlayer(path), song
+
+
+def playNonExistant(url):
+    song = {}
+    path = f"{LIBRARY}/{cv.TEMPORARY}.{EXT}"
+    ydl_opts = {
+        "extract_audio": True,
+        "format": "bestaudio",
+        "no_check_certificate": True,
+        "outtmpl": path,
     }
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=True)
         ydl.download(url)
-    title = ls.correct_title(song_info['title'])
+    song["title"] = ls.correct_title(song_info["title"])
+    title = ls.correct_title(song_info["title"])
+    title = check_title_fix(title, url, song_info["title"])
     n_path = f"{LIBRARY}/{title}.{EXT}"
+    song = {
+        "title": song_info["title"],
+        "duration": ui_first.formatted_time(song_info["duration"]),
+        "path": n_path,
+        "url": url,
+    }
+    ls.song_to_table_csv(song)
     os.rename(path, n_path)
-    return song_info, MediaPlayer(n_path)
+    return MediaPlayer(n_path), song
 
 
-def play_and_write(bu, media, isplaylist=False):
+def play_add_Song(bu, isplaylist=False):
     """
     Initiate the playing, and add additional info to the database if needed.
     """
-    song = bu.song
-    if song["path"] == cv.NO_PATH or song["duration"] == cv.NO_DURATION:
-        path, song_info = downloadSong(song["url"], song['title'])
-        ls.add_attribute(song['title'], path, "path")
-        song["duration"] = ui_first.formatted_time(song_info["duration"])
-        ls.add_attribute(song['title'], song["duration"], "duration")
+    media, song = playExisting(bu)
     post_vars = ui_first.cli_gui(song["title"], song["duration"], media, isplaylist)
     if post_vars["watched"]:
-        ls.increase_watched(song['title'])
+        ls.increase_watched(song["title"])
     return post_vars["breaker"]
 
 
@@ -128,8 +148,7 @@ def play_on_list(bu, cmd_input):
         print("[TRY AGAIN], number not on list")
     else:
         bu.song = bu.table.iloc[cmd_num].copy(deep=True)
-        _, media = playTheSong(bu.song["url"], bu.song["path"])
-        play_and_write(bu, media)
+        play_add_Song(bu)
         bu.print_closer()
         bu.show_article()
 
@@ -140,14 +159,13 @@ def play_playlist(playlist, bu, info):
         bu.song = bu.table.iloc[el].copy(deep=True)
         title = bu.song["title"]
         print(f"[nepst: {title.lower()}]")
-        # has to handle it here otherwise the playlist breaks
+        # have to handle it here otherwise the playlist breaks
         try:
-            _, media = playTheSong(bu.song["url"], bu.song["path"])
+            breaker = play_add_Song(bu, isplaylist=True)
         except DownloadError:
             print(f"\ncant play this fucking song: {title}!")
             print("Error in the pleilist... going further!!...")
             continue
-        breaker = play_and_write(bu, media, isplaylist=True)
         bu.print_closer()
         if breaker == "x":
             break
@@ -163,9 +181,9 @@ def autist_shuffle(song_no, bu):
     print(f"[run: {title.lower()}]")
     tries = 0
     while True:
-        # has to handle it here otherwise the playlist breaks
+        # have to handle it here otherwise the playlist breaks
         try:
-            _, media = playTheSong(bu.song["url"], bu.song["path"])
+            breaker = play_add_Song(bu, isplaylist=True)
         except DownloadError:
             print(f"\ncant play this fucking song: {title}!")
             print("Error in the autist pleilist... !!...")
@@ -174,11 +192,10 @@ def autist_shuffle(song_no, bu):
                 print("song gives error 3 times, it's over".center(cv.SCR_L, "*"))
                 break
             continue
-        breaker = play_and_write(bu, media, isplaylist=True)
         bu.print_closer()
         if breaker == "x":
             break
-    print("\nthe westphalen... its over...\n")
+    print("\nwestphalen... its over...\n")
 
 
 def play_new(bu, cmd_input):
@@ -190,14 +207,13 @@ def play_new(bu, cmd_input):
     else:
         url = cmd_input
         print(url)
-        song_info, media = playTheSong(url)
-        v_title = song_info["title"]
-        v_duration = song_info["duration"]
-        bu.song = {"title": v_title, "url": url, "duration": v_duration, "path": cv.NO_PATH}
-        ls.write_table_to_csv(v_title, url, ui_first.formatted_time(v_duration))
-        play_and_write(
-            bu, media
-        )  # TODO: the order of FIRST writing to table and THEN playing is very important and is a risk
+        media, song = playNonExistant(url)
+        post_vars = ui_first.cli_gui(
+            song["title"], song["duration"], media, isplaylist=False
+        )
+        if post_vars["watched"]:
+            ls.increase_watched(song["title"])
+        bu.song = song
         bu.print_closer()
         bu.show_article()
 
@@ -223,8 +239,7 @@ def play_random_force(bu):
     bu.song = bu.table.iloc[r].copy(deep=True)
     title = bu.song["title"]
     print(f"\nPlaying a random song... [{title}]\n")
-    _, media = playTheSong(bu.song["url"], bu.song["path"])
-    play_and_write(bu, media)
+    play_add_Song(bu, isplaylist=True)
     # bu.print_closer()
     # bu.show_article()
 
@@ -257,8 +272,7 @@ def replay(bu):
     Replays the song saved in the `BaseInterface` object (bu). If it wasn't
     added to the library yet, it means it will be added.
     """
-    _, media = playTheSong(bu.song["url"], bu.song["path"])
-    play_and_write(bu, media)
+    play_add_Song(bu)
     # bu.print_closer()
     # bu.show_article()
 
@@ -336,12 +350,18 @@ def delete_song():
         print(f"[ERROR] index ({cmd_input}) out of bounds.")
         return
     row_index = int(cmd_input)
-    title = df.iloc[row_index]["title"]
+    song = df.iloc[row_index]
+    title = song["title"]
     print("Are you sure to delete the song: ")
     print(f"> {title}")
+    if song["path"] != cv.NO_PATH:
+        print("This will also delete the file: ")
+        print(f"> {os.path.abspath(song['path'])}")
     make_sure = _root_prompt("? [y/N]: ")
     if make_sure in {"y", "Y"}:
         ls.del_from_csv(row_index)
+        if song["path"] != cv.NO_PATH:
+            os.remove(song["path"])
         print(f"[INFO] deleted song: {title}")
     else:
         print("[INFO] deletion stopped.")
@@ -366,6 +386,9 @@ def single_play(bu):
             "title": song_info["title"],
             "url": url,
             "duration": song_info["duration"],
+            "path": cv.NO_PATH,
+            "watched": 0,
+            "add_date": "0",
         }
         ui_first.cli_gui(v_title, v_duration, media, False)
         bu.print_closer()

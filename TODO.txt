@@ -1,4 +1,6 @@
 # TODO
+ - create a better decision tree. Since decisions are executed on a graph, maybe
+a decision matrix could be in order
  - tidy up existing code:
    - download/playing mechanism is ugly, risky and bloated
    - printing mechanism is not too coherent
@@ -18,3 +20,4 @@
  - delhusa djon: plays Nika se Perimeno over and over
  - download & store songs in a library instead of downloading them everytime,
  read and play already existing songs from the library
+ - delete songs from table and library
