@@ -350,11 +350,11 @@ def delete_song():
     row_index = int(cmd_input)
     song = df.iloc[row_index]
     title = song["title"]
-    print("Are you sure to delete the song: ")
-    print(f"> {title}")
+    print("! Are you sure to delete the song: ")
+    print(f"! > {title}")
     if song["path"] != cv.NO_PATH:
-        print("This will also delete the file: ")
-        print(f"> {os.path.abspath(song['path'])}")
+        print("! This will also delete the file: ")
+        print(f"! > {os.path.abspath(song['path'])}")
     make_sure = _root_prompt("? [y/N]: ")
     if make_sure in {"y", "Y"}:
         ls.del_from_csv(row_index)
