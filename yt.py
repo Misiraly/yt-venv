@@ -89,7 +89,7 @@ def playExisting(bu):
     }
     if extract or download:
         with YoutubeDL(ydl_opts) as ydl:
-            song_info = ydl.extract_info(song["url"], download=True)
+            song_info = ydl.extract_info(song["url"], download)
             if download:
                 ydl.download(song["url"])
                 song["path"] = path
