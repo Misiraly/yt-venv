@@ -91,7 +91,6 @@ def playExisting(bu):
         with YoutubeDL(ydl_opts) as ydl:
             song_info = ydl.extract_info(song["url"], download)
             if download:
-                ydl.download(song["url"])
                 song["path"] = path
                 ls.add_attribute(song["title"], path, "path")
         if extract:
@@ -112,7 +111,6 @@ def playNonExistant(url):
     }
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=True)
-        ydl.download(url)
     song["title"] = ls.correct_title(song_info["title"])
     title = ls.correct_title(song_info["title"])
     title = check_title_fix(title, url, song_info["title"])
