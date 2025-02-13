@@ -8,6 +8,9 @@ a decision matrix could be in order
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
  - possibilty to jump to timestamps, 10s back-forth
+use number keys to get to the corresponding 10% mark (key 8->80%...)
+ - implement better GUI -- maybe with curses... it maybe necessary to be able
+to govern a whole screen, not just the last line of the cmd
 
 # Partially DONE
  - add "popularity" counter: # of times songs has been listened to 

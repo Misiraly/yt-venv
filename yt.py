@@ -123,6 +123,7 @@ def playNonExistant(url):
     }
     ls.song_to_table_csv(song)
     os.rename(path, n_path)
+    print(f"File saved to {n_path}")
     return MediaPlayer(n_path), song
 
 
@@ -261,7 +262,7 @@ def play_random(bu):
             playit = str(songs.index[0])
             print(f"\nPlaying a random song... [{songs.iloc[0]["title"]}]\n")
         break
-    init_player(bu, playit)
+    return(playit)
 
 
 @article_decorator
@@ -461,17 +462,19 @@ def command_help():
     print("  - help :: prints this list")
 
 
-def decision_tree(bu):
+def decision_tree(bu, cmd_input):
     """
     Decides what to execute given an input from the terminal.
     Could be implemented with a dict... but it is pretty fast anyway,
     doesn't get executed much.
     """
-    bu.refresh_article()
-    print("[ser : del : correct title : rename title : tab : date : freq]")
-    print("[r : single : random : shuffle : autist : `,` : help]")
-    prompt = "[>] URL or song Number /quit - 'q'/ [>]: "
-    cmd_input = _root_prompt(prompt)
+    if cmd_input is None:
+        bu.refresh_article()
+        print("[ser : del : correct title : rename title : tab : date : freq]")
+        print("[r : single : random : shuffle : autist : `,` : help]")
+        prompt = "[>] URL or song Number /quit - 'q'/ [>]: "
+        cmd_input = _root_prompt(prompt)
+    to_pass = None
     if cmd_input == "ser":
         search_table()
     elif cmd_input == "del":
@@ -495,7 +498,7 @@ def decision_tree(bu):
             elif cmd_input == "single":
                 single_play(bu)
             elif cmd_input == "random":
-                play_random(bu=bu)
+                to_pass = play_random(bu=bu)
             elif cmd_input == "random --force":
                 play_random_force(bu=bu)
             elif cmd_input == "shuffle":
@@ -511,14 +514,16 @@ def decision_tree(bu):
         except DownloadError:
             print(f"cent lpay this: {bu.song['title']}... fuuuuU!")
             print("\nGoing further down the road...")
-            return
+            return None
+    return to_pass
 
 
 def main_loop():
     bu = ui_first.BaseInterface()
     bu.show_article()
+    cmd_input = None
     while True:
-        decision_tree(bu)
+        cmd_input = decision_tree(bu, cmd_input)
 
 
 if __name__ == "__main__":
