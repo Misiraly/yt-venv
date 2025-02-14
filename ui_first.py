@@ -19,7 +19,7 @@ STATUS_CHAR = {"p", "s", "l", "r", "q", "n", "x"}
 EXIT_CHAR = {"q", "x"}
 
 
-def check_end(seconds, v: Value, t_v: Value):
+def check_end(seconds, v, t_v):
     """
 
     Parameters
@@ -37,7 +37,7 @@ def check_end(seconds, v: Value, t_v: Value):
     v.value = key
 
 
-def ask(v: Value):
+def ask(v):
     """Check for key push event and pass it to the inter-process variable.
 
     Parameters
@@ -76,23 +76,54 @@ class ProgressBar:
 
     """
 
-    def __init__(self, seconds, media):
-        self.scr_l = 60
-        left_side = ""
-        right_side = ""
+    def __init__(self, seconds, media, title, isplaylist):
+        self.scr_l = cv.PLR_L
+        scr_l = self.scr_l
         self.seconds = seconds
         self.is_video_long = seconds > 3599
         self.time_bar = formatted_time(0)
         self.full_time = formatted_time(seconds, self.is_video_long)
-        subtract = (
-            len(left_side)
-            + STATUS_L
-            + 1
-            + len(right_side)
-            + len(self.time_bar)
-            + len(self.full_time)
+        subtract = +STATUS_L + 1 + len(self.time_bar) + len(self.full_time)
+        self.bar_l = scr_l - subtract
+        bar_l = self.bar_l
+
+        print("-" * scr_l)
+        title_list = formatter.line_breaker(str(title), scr_l - 2)
+        for line in title_list:
+            print(line.center(scr_l))
+        print()
+        print()
+        helper1 = "[||] - p  [►] - l  [■] - q   Replay - r"
+        if isplaylist:
+            helper1 = "[||] - p  [►] - l  [►|] - q   Replay - r  Exit playlist - x"
+        helper2 = "[<<] - g" + " " * (len(helper1) - 2 * 9 - 2) + "h - [>>]"
+        print(helper1.center(scr_l))
+        print(helper2.center(scr_l))
+        quot = bar_l / 10
+        marks = [int(i * quot) for i in range(10)]
+        marked = "".join(
+            (str(round(i / quot)) if i in marks else " " for i in range(bar_l))
         )
-        self.bar_l = self.scr_l - subtract
+        #
+        # To demonstrate that I would have been able to define this string in
+        # a self-conained formula, I leave this code snippet here:
+        #
+        # marked = "".join(
+        #     [
+        #         (
+        #             str(int((i + 1) * 10 / bar_l) - 1)
+        #             if (int(i * 10 / bar_l) != int((i + 1) * 10 / bar_l))
+        #             else " "
+        #         )
+        #         for i in range(bar_l // 10, bar_l + bar_l // 10)
+        #     ]
+        # )
+        #
+        #
+        #
+        # marked = "".join([str(int((i)*10/bar_l)) if not int((i )% (bar_l / 10)) else " " for i in range(-1, bar_l - 1)])
+        print()
+        print(" " * (STATUS_L + 1 + len(self.time_bar)) + marked)
 
         self.media = media
         self.start_time = 0
@@ -168,7 +199,7 @@ def formatted_time(seconds, is_long=False):
     return f"{hour}:{minute}:{sec}"
 
 
-def player_info(title, seconds, isplaylist, info_length=cv.PLR_L):
+def player_info(title, seconds, bar_l, isplaylist, info_length=cv.PLR_L):
     """Prints necessary info about a song.
 
     Parameters
@@ -190,14 +221,32 @@ def player_info(title, seconds, isplaylist, info_length=cv.PLR_L):
         print(line.center(info_length))
     print()
     print()
-    helper = "[||] - p  [►] - l  [■] - q   Replay - r"
+    helper1 = "[||] - p  [►] - l  [■] - q   Replay - r"
     if isplaylist:
-        helper = "[||] - p  [►] - l  [►|] - q   Replay - r  Exit playlist - x"
-    print(helper.center(info_length))
+        helper1 = "[||] - p  [►] - l  [►|] - q   Replay - r  Exit playlist - x"
+    helper2 = "[<<] - g" + " " * (len(helper1) - 2 * 9 - 2) + "h - [>>]"
+    print(helper1.center(info_length))
+    print(helper2.center(info_length))
+    quot = bar_l / 10
+    marks = [int(i * quot) for i in range(10)]
+    marked = "".join(
+        (str(round(i / quot)) if i in marks else " " for i in range(bar_l))
+    )
+    # marked = "".join(
+    #     [
+    #         (
+    #             str(int((i - 1) * 10 / bar_l))
+    #             if (int(i * 10 / bar_l) != int((i + 1) * 10 / bar_l))
+    #             else " "
+    #         )
+    #         for i in range(1, bar_l)
+    #     ]
+    # )
     print()
+    print(marked.center(info_length))
 
 
-def player_loop(media, v_duration, v: Value, t_v: Value):
+def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
     """While media is playing, checks for user input and executes accordingly.
 
     Parameters
@@ -215,13 +264,18 @@ def player_loop(media, v_duration, v: Value, t_v: Value):
     -------
 
     """
+    bar = ProgressBar(v_duration, media, v_title, isplaylist)
+    # player_info(v_title, v_duration, bar.bar_l, isplaylist)
     media.play()
     key = v.value
     watched = False
-    Bar = ProgressBar(v_duration, media)
+    tenth = v_duration // 10
+    time_spent = 0
+    incr = 0.1
+    jump = 5  # seconds
     while key not in EXIT_CHAR:
         t_v.value = media.get_time() / 1000
-        if t_v.value / v_duration > cv.REL_W_LIMIT or t_v.value > cv.ABS_W_LIMIT:
+        if time_spent / v_duration > cv.REL_W_LIMIT or time_spent > cv.ABS_W_LIMIT:
             watched = True
         if key == "p":
             # pause
@@ -240,9 +294,20 @@ def player_loop(media, v_duration, v: Value, t_v: Value):
             media.stop()
             media.play()
             v.value = "n"
-        Bar.print_bar(key)
+        elif key == "g":
+            media.set_time(max(int((t_v.value - jump) * 1000), 0))
+            v.value = "n"
+        elif key == "h":
+            tiem = min(int(t_v.value + jump) * 1000, int(v_duration * 1000))
+            media.set_time(tiem)
+            v.value = "n"
+        elif key.isnumeric():
+            media.set_time(int(key) * tenth * 1000)
+            v.value = "n"
+        bar.print_bar(key)
         key = v.value
-        time.sleep(0.1)
+        time.sleep(incr)
+        time_spent += incr
     v.value = "q" if key != "x" else "x"
     return watched
 
@@ -250,7 +315,6 @@ def player_loop(media, v_duration, v: Value, t_v: Value):
 def cli_gui(v_title, in_duration, media, isplaylist):
     """Handles user inputs and graphic output for the song being played."""
     v_duration = get_seconds(in_duration)
-    player_info(v_title, v_duration, isplaylist)
     key = "n"
     c_time = 0
     post_vars = {}
@@ -268,7 +332,7 @@ def cli_gui(v_title, in_duration, media, isplaylist):
     )
     p_ask.start()
     p_check_end.start()
-    post_vars["watched"] = player_loop(media, v_duration, v, t_v)
+    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()

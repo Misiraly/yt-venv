@@ -262,7 +262,7 @@ def play_random(bu):
             playit = str(songs.index[0])
             print(f"\nPlaying a random song... [{songs.iloc[0]["title"]}]\n")
         break
-    return(playit)
+    return playit
 
 
 @article_decorator

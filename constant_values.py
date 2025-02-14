@@ -1,6 +1,6 @@
 # screen size related
 SCR_L = 80
-PLR_L = 60
+PLR_L = 80
 
 # time related
 ABS_W_LIMIT = 300  # seconds
