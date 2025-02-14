@@ -99,11 +99,11 @@ class ProgressBar:
         helper2 = "[<<] - g" + " " * (len(helper1) - 2 * 9 - 2) + "h - [>>]"
         print(helper1.center(scr_l))
         print(helper2.center(scr_l))
-        quot = bar_l / 10
-        marks = [int(i * quot) for i in range(10)]
-        marked = "".join(
-            (str(round(i / quot)) if i in marks else " " for i in range(bar_l))
-        )
+        # quot = bar_l / 10
+        # marks = [int(i * quot) for i in range(10)]
+        # marked = "".join(
+        #     (str(round(i / quot)) if i in marks else " " for i in range(bar_l))
+        # )
         #
         # To demonstrate that I would have been able to define this string in
         # a self-conained formula, I leave this code snippet here:
@@ -123,7 +123,7 @@ class ProgressBar:
         #
         # marked = "".join([str(int((i)*10/bar_l)) if not int((i )% (bar_l / 10)) else " " for i in range(-1, bar_l - 1)])
         print()
-        print(" " * (STATUS_L + 1 + len(self.time_bar)) + marked)
+        # print(" " * (STATUS_L + 1 + len(self.time_bar)) + marked)
 
         self.media = media
         self.start_time = 0
@@ -199,53 +199,6 @@ def formatted_time(seconds, is_long=False):
     return f"{hour}:{minute}:{sec}"
 
 
-def player_info(title, seconds, bar_l, isplaylist, info_length=cv.PLR_L):
-    """Prints necessary info about a song.
-
-    Parameters
-    ----------
-    title :
-
-    seconds :
-
-    info_length :
-         (Default value = 60)
-
-    Returns
-    -------
-
-    """
-    print("-" * info_length)
-    title_list = formatter.line_breaker(str(title), info_length - 2)
-    for line in title_list:
-        print(line.center(info_length))
-    print()
-    print()
-    helper1 = "[||] - p  [►] - l  [■] - q   Replay - r"
-    if isplaylist:
-        helper1 = "[||] - p  [►] - l  [►|] - q   Replay - r  Exit playlist - x"
-    helper2 = "[<<] - g" + " " * (len(helper1) - 2 * 9 - 2) + "h - [>>]"
-    print(helper1.center(info_length))
-    print(helper2.center(info_length))
-    quot = bar_l / 10
-    marks = [int(i * quot) for i in range(10)]
-    marked = "".join(
-        (str(round(i / quot)) if i in marks else " " for i in range(bar_l))
-    )
-    # marked = "".join(
-    #     [
-    #         (
-    #             str(int((i - 1) * 10 / bar_l))
-    #             if (int(i * 10 / bar_l) != int((i + 1) * 10 / bar_l))
-    #             else " "
-    #         )
-    #         for i in range(1, bar_l)
-    #     ]
-    # )
-    print()
-    print(marked.center(info_length))
-
-
 def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
     """While media is playing, checks for user input and executes accordingly.
 
@@ -265,7 +218,6 @@ def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
 
     """
     bar = ProgressBar(v_duration, media, v_title, isplaylist)
-    # player_info(v_title, v_duration, bar.bar_l, isplaylist)
     media.play()
     key = v.value
     watched = False
@@ -279,10 +231,12 @@ def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
             watched = True
         if key == "p":
             # pause
+            time_spent -= incr
             media.pause()
             v.value = "b"
         elif key == "s":
             # stop
+            time_spent -= incr
             media.stop()
             v.value = "n"
         elif key == "l":
