@@ -223,7 +223,7 @@ def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
     watched = False
     tenth = v_duration // 10
     time_spent = 0
-    incr = 0.1
+    incr = cv.INTERVAL_INCR
     jump = 5  # seconds
     while key not in EXIT_CHAR:
         t_v.value = media.get_time() / 1000
@@ -231,20 +231,22 @@ def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
             watched = True
         if key == "p":
             # pause
-            time_spent -= incr
+            incr = 0
             media.pause()
             v.value = "b"
         elif key == "s":
             # stop
-            time_spent -= incr
+            incr = 0
             media.stop()
             v.value = "n"
         elif key == "l":
             # play
+            incr = cv.INTERVAL_INCR
             media.play()
             v.value = "n"
         elif key == "r":
             # replay
+            incr = cv.INTERVAL_INCR
             media.stop()
             media.play()
             v.value = "n"
@@ -272,7 +274,7 @@ def cli_gui(v_title, in_duration, media, isplaylist):
     key = "n"
     c_time = 0
     post_vars = {}
-    # variable accessible by parallel processes
+    # variables accessible by parallel processes
     v = Value("u", key)
     t_v = Value("f", c_time)
     p_ask = Process(target=ask, args=(v,))

@@ -6,6 +6,8 @@ PLR_L = 80
 ABS_W_LIMIT = 300  # seconds
 REL_W_LIMIT = 0.7  # 70%
 
+INTERVAL_INCR = 0.1  # seconds
+
 # dataframe
 NO_PATH = "No Path"
 NO_DURATION = "No Duration"
