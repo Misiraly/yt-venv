@@ -1,14 +1,12 @@
 # TODO
- - create a better decision tree. Since decisions are executed on a graph, maybe
-a decision matrix could be in order
+ - possibility to toggle magnitude of seconds that can be jumped while playing
  - tidy up existing code:
-   - download/playing mechanism is ugly, risky and bloated
+   - download/playing mechanism could be more robust, ie., what if a music file
+   doesn't exist but we have it listed in our library?
    - printing mechanism is not too coherent
    - ui_first objects' printing might be very inefficient
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
- - possibilty to jump to timestamps, 10s back-forth
-use number keys to get to the corresponding 10% mark (key 8->80%...)
  - implement better GUI -- maybe with curses... it maybe necessary to be able
 to govern a whole screen, not just the last line of the cmd
 
@@ -24,3 +22,12 @@ to govern a whole screen, not just the last line of the cmd
  - download & store songs in a library instead of downloading them everytime,
  read and play already existing songs from the library
  - delete songs from table and library
+ - possibilty to jump to timestamps, 10s back-forth
+use number keys to get to the corresponding 10% mark (key 8->80%...)
+
+# ABANDONED
+ - create a better decision tree. Since decisions are executed on a graph, maybe
+a decision matrix could be in order
+    > Looking at it better, a little tweak was more than enough.
+ - download/playing mechanism is ugly, risky and bloated
+    > not as relevant, rewritten as above.

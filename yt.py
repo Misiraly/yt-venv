@@ -94,7 +94,7 @@ def playExisting(bu):
                 song["path"] = path
                 ls.add_attribute(song["title"], path, "path")
         if extract:
-            song["duration"] = ui_first.formatted_time(song_info["duration"])
+            song["duration"] = song_info["duration"]
             ls.add_attribute(song["title"], song["duration"], "duration")
     bu.song = song
     return MediaPlayer(path), song
@@ -117,7 +117,7 @@ def playNonExistant(url):
     n_path = f"{LIBRARY}/{title}.{EXT}"
     song = {
         "title": song_info["title"],
-        "duration": ui_first.formatted_time(song_info["duration"]),
+        "duration": song_info["duration"],
         "path": n_path,
         "url": url,
     }

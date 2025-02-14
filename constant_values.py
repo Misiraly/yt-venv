@@ -10,7 +10,7 @@ INTERVAL_INCR = 0.1  # seconds
 
 # dataframe
 NO_PATH = "No Path"
-NO_DURATION = "No Duration"
+NO_DURATION = -999
 
 # placeholders
 TEMPORARY = "_temporary_file_name_"

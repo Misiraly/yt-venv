@@ -81,9 +81,9 @@ class ProgressBar:
         scr_l = self.scr_l
         self.seconds = seconds
         self.is_video_long = seconds > 3599
-        self.time_bar = formatted_time(0)
+        self.time_bar = formatted_time(0, self.is_video_long)
         self.full_time = formatted_time(seconds, self.is_video_long)
-        subtract = +STATUS_L + 1 + len(self.time_bar) + len(self.full_time)
+        subtract = STATUS_L + 1 + len(self.time_bar) + len(self.full_time)
         self.bar_l = scr_l - subtract
         bar_l = self.bar_l
 
@@ -143,14 +143,14 @@ class ProgressBar:
         neg_bar = "-" * (self.bar_l - len(bar))
         if key in STATUS_CHAR and key not in {"n", "np"}:
             self.key = key
-        self.time_bar = formatted_time(_c_time)
+        self.time_bar = formatted_time(_c_time, self.is_video_long)
         progress = STATUS_ICON[self.key] + " " + self.time_bar + bar + neg_bar
         progress = progress + self.full_time
         print(progress, end="\r")
 
 
 def get_seconds(formatted_input: str = 0):
-    """Inverse of formatted_time (below), not actually used.
+    """Inverse of formatted_time (below), actually used, sadly.
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ def formatted_time(seconds, is_long=False):
     minute = "0" * (2 - len(minute)) + minute
     sec = str(sec % 60)
     sec = "0" * (2 - len(sec)) + sec
-    if not is_long:
+    if not is_long and seconds < 3599:
         return f"{minute}:{sec}"
     return f"{hour}:{minute}:{sec}"
 
@@ -268,9 +268,8 @@ def player_loop(media, v_title, v_duration, isplaylist, v, t_v):
     return watched
 
 
-def cli_gui(v_title, in_duration, media, isplaylist):
+def cli_gui(v_title, v_duration, media, isplaylist):
     """Handles user inputs and graphic output for the song being played."""
-    v_duration = get_seconds(in_duration)
     key = "n"
     c_time = 0
     post_vars = {}
