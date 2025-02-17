@@ -1,14 +1,17 @@
 # TODO
- - possibility to toggle magnitude of seconds that can be jumped while playing
+ - implement better GUI -- maybe with curses... it may be necessary to be able
+to govern a whole screen, not just the last line of the cmd
+   - possibility to toggle magnitude of seconds that can be jumped while
+   playing, the magnitude of the jump needs to be displayed above the player...
  - tidy up existing code:
    - download/playing mechanism could be more robust, ie., what if a music file
    doesn't exist but we have it listed in our library?
    - printing mechanism is not too coherent
    - ui_first objects' printing might be very inefficient
+   - ui_first decision making -- it is with if-else statements, but couldn't be
+   it done better with a dictionary?
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
- - implement better GUI -- maybe with curses... it maybe necessary to be able
-to govern a whole screen, not just the last line of the cmd
 
 # Partially DONE
  - add "popularity" counter: # of times songs has been listened to 
@@ -17,6 +20,7 @@ to govern a whole screen, not just the last line of the cmd
    (- maybe tab that slates through periods as well)
 
 # DONE
+ - timestamps wrongly displayed, duration sorted in a dumb way
  - random: gives 5 random choices, first is automatically chosen (=='y')
  - delhusa djon: plays Nika se Perimeno over and over
  - download & store songs in a library instead of downloading them everytime,

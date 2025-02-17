@@ -4,13 +4,14 @@ yt.py
 How use:
 --------
 Really not optimised for others to use. But you can give it a try.
+ - setup virtual environment as per "requirements.txt"
  - rename the music table "data/test-table.csv" to "data/music_table.csv" to
  start out somewhere. You can personalize it later.
  - somehow make it happen, that you are able to run the `yt.py` script. That is
- the main one. Paths will be a problem I think. What works for me is to run the
- script with these batch commands:  
+ the main one. What works for me is to run the script with these batch
+ commands:  
     `cd C:\<your path>\yt-venv`  
-    `C:\<path to the yt-venv environment>\python.exe C:\<your path>\yt-venv\yt.py`  
+    `C:\\Scripts\python.exe C:\<your path>\yt-venv\yt.py`  
 
 Commands to use in the program:
 -------------------------------

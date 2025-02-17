@@ -1,6 +1,6 @@
 __pycache__/
 library/
-search_trial/
+scratch/
 
 data/music_lib*
 data/music_table*.csv

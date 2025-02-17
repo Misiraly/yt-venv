@@ -452,6 +452,7 @@ def command_help():
     print("  - tab :: print the list of songs")
     print("  - date :: print songs are by date, descending")
     print("  - freq :: print songs arranged by popularity, descending")
+    print("  - re-freq :: print songs arranged by popularity, ascending")
     print("  - r :: replay a song")
     print("  - single :: play a url without adding it to the library")
     print("  - random :: play a random song. Use '--force' to play it automatically")
@@ -471,7 +472,7 @@ def decision_tree(bu, cmd_input):
     if cmd_input is None:
         bu.refresh_article()
         print("[ser : del : correct title : rename title : tab : date : freq]")
-        print("[r : single : random : shuffle : autist : `,` : help]")
+        print("[re-freq : r : single : random : shuffle : autist : `,` : help]")
         prompt = "[>] URL or song Number /quit - 'q'/ [>]: "
         cmd_input = _root_prompt(prompt)
     to_pass = None
@@ -489,6 +490,8 @@ def decision_tree(bu, cmd_input):
         bu.show_article_by_date()
     elif cmd_input == "freq":
         bu.show_article_by_watched()
+    elif cmd_input == "re-freq":
+        bu.show_article_by_least_watched()
     elif cmd_input == "help":
         command_help()
     else:

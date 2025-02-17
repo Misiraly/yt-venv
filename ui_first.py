@@ -287,7 +287,7 @@ def cli_gui(v_title, v_duration, media, isplaylist):
     )
     p_ask.start()
     p_check_end.start()
-    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)
+    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)  # TODO: media.play() is hidden inside this func, but media.stop() is outside!
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()
@@ -385,4 +385,12 @@ class BaseInterface:
         they were added to the library. The newest is thus on the bottom.
         """
         df = self.table.sort_values(by="watched")
+        print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))
+
+    def show_article_by_least_watched(self):
+        """
+        Prints the library arranged from latest and newest based on the date
+        they were added to the library. The newest is thus on the bottom.
+        """
+        df = self.table.sort_values(by="watched", ascending=False)
         print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))
