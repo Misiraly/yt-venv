@@ -12,7 +12,8 @@ Really not optimised for others to use. But you can give it a try.
  commands:  
     `cd C:\<your path>\yt-venv`  
     `C:\\Scripts\python.exe C:\<your path>\yt-venv\yt.py`  
-
+ - you copy and paste a yt url into the command line, the program should
+ download, play and add it to your library.
 Commands to use in the program:
 -------------------------------
   - ser :: search for song
@@ -29,4 +30,8 @@ Commands to use in the program:
   - by_date :: play the songs by date of addition to the list
   - `,` :: playlist of song numbers divided by a comma, eg `12, 3, 8`
   - autist :: play the same song over and over again
-  - help :: prints this list
+  - help :: prints this list  
+
+While the media is playing:
+- use the keys displayed for the desired effect
+- use number keys 0, 1, 2, ... 9 to skip to the 0, 10, 20,..., 90 % marks

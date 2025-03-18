@@ -48,8 +48,6 @@ def ask(v: Value) -> None:
     """
     key = v.value
     while key not in EXIT_CHAR:
-        # if we don't check for this below, then the Process actually DOESN'T
-        # STOP or FUCKS UP or smth even after TERMINATING IT. Cuh
         if kbhit():
             try:
                 key = getch().decode("ASCII").lower()
@@ -123,7 +121,7 @@ class ProgressBar:
 
 
 def get_seconds(formatted_input: str = "0") -> int:
-    """Inverse of formatted_time (below), actually used, sadly.
+    """Convert formatted time to seconds.
 
     Parameters
     ----------
@@ -147,7 +145,7 @@ def get_seconds(formatted_input: str = "0") -> int:
 
 
 def formatted_time(seconds: int, is_long: bool = False) -> str:
-    """eg 123 -> 02:03, 3673 -> 01:01:13
+    """Convert seconds to formatted time string.
 
     Parameters
     ----------
@@ -197,44 +195,40 @@ def player_loop(media: Any, v_title: str, v_duration: int, isplaylist: bool, v: 
     media.play()
     key = v.value
     watched = False
-    tenth = v_duration // 10
     time_spent = 0
     incr = cv.INTERVAL_INCR
     jump = 5  # seconds
+
     while key not in EXIT_CHAR:
         t_v.value = media.get_time() / 1000
         if time_spent / v_duration > cv.REL_W_LIMIT or time_spent > cv.ABS_W_LIMIT:
             watched = True
         if key == "p":
-            # pause
             incr = 0
             media.pause()
         elif key == "s":
-            # stop
             incr = 0
             media.stop()
         elif key == "l":
-            # play
             incr = cv.INTERVAL_INCR
             media.play()
         elif key == "r":
-            # replay
             incr = cv.INTERVAL_INCR
             media.stop()
             media.play()
         elif key == "g":
             media.set_time(max(int((t_v.value - jump) * 1000), 0))
         elif key == "h":
-            tiem = min(int((t_v.value + jump) * 1000), int(v_duration * 1000))
-            media.set_time(tiem)
+            media.set_time(min(int((t_v.value + jump) * 1000), int(v_duration * 1000)))
         elif key.isnumeric():
-            media.set_time(int(key) * tenth * 1000)
+            media.set_time(int(key) * (v_duration // 10) * 1000)
         bar.print_bar(key)
         key = v.value
         if v.value not in EXIT_CHAR:
             v.value = "n"
         time.sleep(incr)
         time_spent += incr
+
     v.value = "q" if key != "x" else "x"
     return watched
 
@@ -261,14 +255,13 @@ def cli_gui(v_title: str, v_duration: int, media: Any, isplaylist: bool) -> dict
     key = "n"
     c_time = 0
     post_vars = {}
-    # variables accessible by parallel processes
     v = Value("u", key)
     t_v = Value("f", c_time)
     p_ask = Process(target=ask, args=(v,))
     p_check_end = Process(target=check_end, args=(v_duration, v, t_v))
     p_ask.start()
     p_check_end.start()
-    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)  # TODO: media.play() is hidden inside this func, but media.stop() is outside!
+    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()
@@ -295,8 +288,7 @@ class BaseInterface:
         "header": ["\n"] + formatter.abc_rower("    PYTHON MUSIC") + ["\n"],
         "body": [],
         "prompt": ["[>] URL or song Number [>]: "],
-        "closer": ["\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***", 
-                   "-" * cv.SCR_L + "\n"],
+        "closer": ["\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***", "-" * cv.SCR_L + "\n"],
     }
     page_width = cv.SCR_L
     song = {
@@ -307,16 +299,16 @@ class BaseInterface:
     ell = "..."
     playlist = []
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.table = ls.pull_csv_as_df()
 
-    def print_closer(self):
-        """ """
+    def print_closer(self) -> None:
+        """Print the closing information."""
         for entry in self.page["closer"]:
             print(entry)
 
-    def double_table(self):
-        """Arranges the library into two columns and returns it as a list."""
+    def double_table(self) -> list:
+        """Arrange the library into two columns and return it as a list."""
         half = len(self.table.index) // 2 + len(self.table.index) % 2
         part_line = self.page_width // 2
         title_l = part_line - len(self.wspace) - len(self.ell)
@@ -326,16 +318,11 @@ class BaseInterface:
             title = song.ljust(title_l)
             if len(title) > title_l:
                 title = title[: title_l - 3] + self.ell
-            tst[i % half] = (
-                tst[i % half]
-                + str(i).ljust(3)
-                + self.wspace
-                + title
-                + self.wspace * (1 - (i // half))
-            )
+            tst[i % half] = tst[i % half] + str(i).ljust(3) + self.wspace + title + self.wspace * (1 - (i // half))
         self.page["body"] = tst
 
-    def refresh_article(self):
+    def refresh_article(self) -> None:
+        """Refresh the library data."""
         self.table = ls.pull_csv_as_df()
 
     def show_article(self) -> None:
@@ -352,11 +339,11 @@ class BaseInterface:
         print(df.to_string(columns=["title"], max_colwidth=cv.SCR_L - 15))
 
     def show_article_by_watched(self) -> None:
-        """Print the library arranged by the most listened to songs."""
+        """Print the library arranged by the most watched songs."""
         df = self.table.sort_values(by="watched")
         print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))
 
     def show_article_by_least_watched(self) -> None:
-        """Print the library arranged by the least listened to songs."""
+        """Print the library arranged by the least watched songs."""
         df = self.table.sort_values(by="watched", ascending=False)
         print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))

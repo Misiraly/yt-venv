@@ -38,6 +38,11 @@ def write_table_to_csv(title_in, url, duration):
         out_df.to_csv(music_table)
 
 
+def is_path_occupied(path):
+    df = pull_csv_as_df()
+    return path in df['path'].values
+
+
 def song_to_table_csv(song):
     """
     Given the title, url and duration of a song, writes it into the library.

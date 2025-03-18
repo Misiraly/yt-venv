@@ -47,6 +47,14 @@ def divide_decorator(func):
 
 
 def check_title_fix(title, url, s_title):
+    if ls.is_path_occupied(f"{LIBRARY}/{title}.{EXT}"):
+        print()
+        print("Warning! after renaming the title, we found it already existed in the library!")
+        print(s_title)
+        print(url)
+        new_name = input("Filename to use (if empty, a hash from url will be used): ")
+        title = new_name
+
     if title == "":
         print()
         print("Warning! after renaming the title, we got an empty string!")
@@ -56,6 +64,7 @@ def check_title_fix(title, url, s_title):
         title = new_name
         if new_name == "":
             title = ls.correct_title(url)
+            print("Warning! Empty string given! Using video url hash as music file name!")
     return title
 
 
@@ -100,7 +109,7 @@ def playExisting(bu):
     return MediaPlayer(path), song
 
 
-def playNonExistant(url):
+def playNonExistent(url):
     song = {}
     path = f"{LIBRARY}/{cv.TEMPORARY}.{EXT}"
     ydl_opts = {
@@ -157,7 +166,7 @@ def play_playlist(playlist, bu, info):
     for el in playlist:
         bu.song = bu.table.iloc[el].copy(deep=True)
         title = bu.song["title"]
-        print(f"[nepst: {title.lower()}]")
+        print(f"[nepst: {title.lower()}]".center(SCR_L))
         # have to handle it here otherwise the playlist breaks
         try:
             breaker = play_add_Song(bu, isplaylist=True)
@@ -206,7 +215,7 @@ def play_new(bu, cmd_input):
     else:
         url = cmd_input
         print(url)
-        media, song = playNonExistant(url)
+        media, song = playNonExistent(url)
         post_vars = ui_first.cli_gui(
             song["title"], song["duration"], media, isplaylist=False
         )
