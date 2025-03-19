@@ -38,17 +38,7 @@ REPLACE_CHAR = {
 
 
 def qsp(tosort, leq):
-    """
-    tosort :: a list of two-entry lists, where the first entry is an index,
-    and the second entry is a value to sort by.
-    leq :: a function defining a less-than-or-equal relation
-
-    Chooses a pivot element from the list, and assigns all elements less-
-    -than-or-equal to a list by its "left" (`l`) and all the elements
-    strictly greater to a list by its "right" (`r`). Returns "left" list,
-    pivot element (as a list) and the "right" list.
-    """
-    l, r = [], []
+    """Partition the list into elements less than or equal to the pivot and elements greater than the pivot."""
     pivot = tosort[-1]
     l = [el for el in tosort[:-1] if leq(el[1], pivot[1])]
     r = [el for el in tosort if not leq(el[1], pivot[1])]
@@ -56,13 +46,7 @@ def qsp(tosort, leq):
 
 
 def qs_eng(tosort, leq):
-    """
-    tosort :: a list of two-entry lists, where the first entry is an index,
-    and the second entry is a value to sort by.
-    leq :: a function defining a less-than-or-equal relation
-
-    Uses recursion to return a list with indices sorted by values.
-    """
+    """Recursively sort the list using quicksort algorithm."""
     if len(tosort) <= 1:
         return tosort
     l, pivot, r = qsp(tosort, leq)
@@ -71,21 +55,8 @@ def qs_eng(tosort, leq):
     return l + pivot + r
 
 
-def qs_df(df, col, leq, cutoff=5):
-    """
-    df :: pandas.DataFrame object
-    col :: column to sort by
-    leq :: a function defining a less-than-or-equal relation for two values,
-    ie, leq(a,b) -> True if a <= b etc... reason is that this allows for
-    user defined relation.
-    cutoff :: the number of elements that we want to return from the `top`
-    of the list.
-
-    Applies the quick-sort algorithm to a DataFrame by on one of it's
-    columns and based on a user defined less-than-or-equal relation. The
-    algorithm actually runs on an array to speed up sorting. DataFrames are
-    slower to iterate through and to change rows.
-    """
+def qs_df(df, col, leq, cutoff=5) -> pd.DataFrame:
+    """Apply the quicksort algorithm to a DataFrame by one of its columns."""
     ilist = df.index.values.tolist()
     dislist = df[col].values.tolist()
     tosort = list(zip(ilist, dislist))
@@ -95,30 +66,19 @@ def qs_df(df, col, leq, cutoff=5):
     return sdf
 
 
-def abc_leq(list_1, list_2):  # == (list_1 <= list_2)
+def abc_leq(list_1, list_2) -> bool:  # == (list_1 <= list_2)
+    """Check if list_1 is less than or equal to list_2 lexicographically."""
     l = min(len(list_1), len(list_2))
     for i in range(l):
         if list_1[i] == list_2[i]:
             continue
-        elif list_1[i] > list_2[i]:
-            return False
-        else:
-            return True
-    # this rewards shorter lists
-    return True
+        return list_1[i] < list_2[i]
+    return len(list_1) <= len(list_2)
 
 
-def tokenize_neighbor(streeng):
+def tokenize_neighbor(streeng: str):
     """
-    Replaces a list of strings where:
-    Replaces characters that usually cannot be understood as part of a word
-    with a whitespace
-    Replaces quirky characters with empty string as they
-    are usually part of a word, just not meaningful in a search...hmm I
-    might revisit this...they are not unintelligable for python after all.
-    Replaces characters with diacritics with non-diacritic equivalent.
-    Splits the string by whitespaces and returns as a list, and concatenates
-    a list of neighboring words concatenated (no empty strings allowed)
+    Tokenize the string and generate neighboring word concatenations.
     ie
     "what are# yoű)dö^ing?"
     -->
@@ -129,8 +89,8 @@ def tokenize_neighbor(streeng):
         string = string.replace(char, " ")
     for char in IGNORE_CHAR:
         string = string.replace(char, "")
-    for char in REPLACE_CHAR:
-        string = string.replace(char, REPLACE_CHAR[char])
+    for char, replacement in REPLACE_CHAR.items():
+        string = string.replace(char, replacement)
     tokens = string.split()
     tokens = [token for token in tokens if token != ""]
     neigh_tokens = [tokens[i] + tokens[i + 1] for i in range(len(tokens) - 1)]
@@ -138,32 +98,27 @@ def tokenize_neighbor(streeng):
 
 
 def token_distance_list(search_value, text, cutoff=5):
-    """
-    Calculate the levensthein distance between all the possible pairs of words,
-    and all the possible concatenations of neighboring words. Order the
-    distances.
-    """
+    """Calculate the Levenshtein distance between tokens and return sorted distances."""
     search_tokens = tokenize_neighbor(search_value)
     text_tokens = tokenize_neighbor(text)
     distance_list = []
+
     for token1 in search_tokens:
         if token1 in text.lower():
             distance_list.append(1)  # very close match
         for token2 in text_tokens:
             distance_list.append(lev(token1, token2))
+
     distance_list.sort()
-    return distance_list
+    return distance_list[:cutoff]
 
 
-def sorted_by_word(s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5):
-    """
-    s_word :: the string to search for.
-    col :: column name of the dataframe based on which the sorting applies
-    lib :: a dataframe that contains the titles (search pool)
-    cutoff :: number matches to display
-    """
+def sorted_by_word(
+    s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5
+) -> pd.DataFrame:
+    """Sort the DataFrame by Levenshtein distance of tokens from the search word."""
     df = lib.copy(deep=True)
-    df["dis"] = lib.apply(lambda row: token_distance_list(s_word, row[col]), axis=1)
+    df["dis"] = df[col].apply(lambda text: token_distance_list(s_word, text, cutoff))
     if cutoff > len(df.index):
         print(
             f"[WARNING] Cutoff value ({cutoff}) larger than library length,"

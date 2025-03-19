@@ -10,25 +10,28 @@ import lib_sorter as ls
 import ui_first
 from modules import search_text as st
 
+# Constants
 EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}
-
 LIBRARY = "library"
 EXT = "ogg"
 
 
-def _root_prompt(prompt):
+def _root_prompt(prompt: str) -> str:
+    """Prompt the user for input and handle exit conditions."""
     cmd_input = input(prompt)
     if cmd_input.lower() in EXIT_CHARS:
         exit()
     return cmd_input
 
 
-def not_sure():
+def not_sure() -> bool:
     return _root_prompt("Are you sure? [y/N]: ") not in YES_CHARS
 
 
 def article_decorator(func):
+    """Decorator to show article and print closer after function execution."""
+
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
         kwargs["bu"].show_article()
@@ -38,6 +41,8 @@ def article_decorator(func):
 
 
 def divide_decorator(func):
+    """Decorator to print divider lines before and after function execution."""
+
     def wrapper(*args, **kwargs):
         print("-" * cv.SCR_L)
         func(*args, **kwargs)
@@ -46,33 +51,31 @@ def divide_decorator(func):
     return wrapper
 
 
-def check_title_fix(title, url, s_title):
+def check_title_fix(title: str, url: str, s_title: str) -> str:
+    """Check and fix the title if it already exists or is empty."""
     if ls.is_path_occupied(f"{LIBRARY}/{title}.{EXT}"):
-        print()
-        print("Warning! after renaming the title, we found it already existed in the library!")
+        print("\nWarning! The title already exists in the library!")
         print(s_title)
         print(url)
         new_name = input("Filename to use (if empty, a hash from url will be used): ")
         title = new_name
 
     if title == "":
-        print()
-        print("Warning! after renaming the title, we got an empty string!")
+        print("\nWarning! The title is empty!")
         print(s_title)
         print(url)
         new_name = input("Filename to use (if empty, a hash from url will be used): ")
         title = new_name
         if new_name == "":
             title = ls.correct_title(url)
-            print("Warning! Empty string given! Using video url hash as music file name!")
+            print(
+                "Warning! Empty string given! Using video url hash as music file name!"
+            )
     return title
 
 
-def playTheSong(url=None):
-    """
-    Play a video from a given url, and return it as as an object with some
-    info about the video.
-    """
+def playTheSong(url: str):
+    """Play the song from the given URL."""
     ydl_opts = {"format": "bestaudio", "no_check_certificate": True}
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=False)
@@ -81,6 +84,7 @@ def playTheSong(url=None):
 
 
 def playExisting(bu):
+    """Play an existing song from the library."""
     song = dict(bu.song)
     extract = song["duration"] == cv.NO_DURATION
     download = song["path"] == cv.NO_PATH
@@ -109,7 +113,8 @@ def playExisting(bu):
     return MediaPlayer(path), song
 
 
-def playNonExistent(url):
+def playNonExistent(url: str):
+    """Play a song that is not in the library."""
     song = {}
     path = f"{LIBRARY}/{cv.TEMPORARY}.{EXT}"
     ydl_opts = {
@@ -137,9 +142,7 @@ def playNonExistent(url):
 
 
 def play_add_Song(bu, isplaylist=False):
-    """
-    Initiate the playing, and add additional info to the database if needed.
-    """
+    """Play a song and add it to the library if watched."""
     media, song = playExisting(bu)
     post_vars = ui_first.cli_gui(song["title"], song["duration"], media, isplaylist)
     if post_vars["watched"]:
@@ -148,9 +151,7 @@ def play_add_Song(bu, isplaylist=False):
 
 
 def play_on_list(bu, cmd_input):
-    """
-    Plays a song that is tracked by our library.
-    """
+    """Play a song tracked by the library."""
     cmd_num = int(cmd_input)
     if cmd_num not in bu.table.index:
         print("[TRY AGAIN], number not on list")
@@ -162,11 +163,12 @@ def play_on_list(bu, cmd_input):
 
 
 def play_playlist(playlist, bu, info):
+    """Play a playlist of songs."""
     print(info.center(cv.SCR_L, "-"))
     for el in playlist:
         bu.song = bu.table.iloc[el].copy(deep=True)
         title = bu.song["title"]
-        print(f"[nepst: {title.lower()}]".center(SCR_L))
+        print(f"[nepst: {title.lower()}]".center(cv.SCR_L))
         # have to handle it here otherwise the playlist breaks
         try:
             breaker = play_add_Song(bu, isplaylist=True)
@@ -183,6 +185,7 @@ def play_playlist(playlist, bu, info):
 
 # TODO: ALMOS SAME AS ABOVE!
 def autist_shuffle(song_no, bu):
+    """Play a song repeatedly until the user exits."""
     print("AUTIST SHUFFLE".center(cv.SCR_L, "-"))
     bu.song = bu.table.iloc[song_no].copy(deep=True)
     title = bu.song["title"]
@@ -207,9 +210,7 @@ def autist_shuffle(song_no, bu):
 
 
 def play_new(bu, cmd_input):
-    """
-    Play a song not yet tracked by our library.
-    """
+    """Play a song not yet tracked by our library."""
     if "https" not in cmd_input:
         search_table(cmd_input)
     else:
@@ -227,11 +228,7 @@ def play_new(bu, cmd_input):
 
 
 def init_player(bu, cmd_input):
-    """
-    If we get an integer input, we assume it refers to a song already in our
-    library. Otherwise we handle it as a new song that needs to be added to
-    the library.
-    """
+    """Initialize the player with a song from the library or a new song."""
     if cmd_input.isnumeric():
         play_on_list(bu, cmd_input)
     else:
@@ -240,23 +237,17 @@ def init_player(bu, cmd_input):
 
 @article_decorator
 def play_random_force(bu):
-    """
-    Plays a random song that is tracked by our library.
-    """
+    """Play a random song from the library."""
     r = np.random.randint(0, len(bu.table.index))
     bu.song = bu.table.iloc[r].copy(deep=True)
     title = bu.song["title"]
     print(f"\nPlaying a random song... [{title}]\n")
     play_add_Song(bu, isplaylist=True)
-    # bu.print_closer()
-    # bu.show_article()
 
 
 # @article_decorator
 def play_random(bu):
-    """
-    Plays a song that is tracked by our library.
-    """
+    """Prompt the user to play a random song from a list of options."""
     while True:
         rand_choice = np.random.choice(
             len(bu.table.index), 5, replace=False
@@ -276,22 +267,19 @@ def play_random(bu):
 
 @article_decorator
 def replay(bu):
-    """
-    Replays the song saved in the `BaseInterface` object (bu). If it wasn't
-    added to the library yet, it means it will be added.
-    """
+    """Replay the current song."""
     play_add_Song(bu)
-    # bu.print_closer()
-    # bu.show_article()
 
 
 def shuffle(bu):
+    """Shuffle and play all songs in the library."""
     playlist = np.copy(bu.table.index.values)
     np.random.shuffle(playlist)
     play_playlist(playlist, bu, "SHUFFLE")
 
 
 def play_from_newest(bu):
+    """Play songs from the newest to the oldest."""
     df = bu.table.sort_values(by="add_date", ascending=False)
     playlist = np.copy(df.index.values)
     info = "PLAYING BY DATE JOE ROGAN PODCAST BY NIGHT ALL DAY"
@@ -299,6 +287,7 @@ def play_from_newest(bu):
 
 
 def play_autist(bu, cmd_input):
+    """Play a song repeatedly based on user input."""
     song_no = cmd_input[7:]  # TODO length constant???
     if song_no.isnumeric():
         autist_shuffle(int(song_no), bu)
@@ -315,14 +304,13 @@ def play_manual_playlist(bu, cmd_input):
         if song_no.isnumeric() and int(song_no) in bu.table.index.values:
             playlist.append(int(song_no))
         else:
-            print()
-            print("[WARNING] Faulty element within the list!")
-            print(f"Element in question: `{song_no}`")
-            print()
+            print("\n[WARNING] Faulty element within the list!")
+            print(f"Element in question: `{song_no}`\n")
     play_playlist(playlist, bu, "MY PLAYLIST. FUCK OFF WE ARE FULL.")
 
 
 def find_options(cmd_input):
+    """Find and return search options from the command input."""
     op_STR = " --cutoff "
     if op_STR in cmd_input:
         return tuple(cmd_input.split(op_STR))
@@ -331,10 +319,7 @@ def find_options(cmd_input):
 
 @divide_decorator
 def search_table(cmd_input=None):
-    """
-    Asks for a string input and searches the library for the closest
-    matching titles.
-    """
+    """Search the library for a song based on user input."""
     lib = ls.pull_csv_as_df()
     if cmd_input is None:
         cmd_input = _root_prompt("Search [optional: --cutoff {int}]: ")
@@ -345,10 +330,7 @@ def search_table(cmd_input=None):
 
 @divide_decorator
 def delete_song():
-    """
-    Asks for an index corresponding to a song from the library, and makes
-    sure the user really wants to delete it (as it is final).
-    """
+    """Delete a song from the library."""
     df = ls.pull_csv_as_df()
     cmd_input = _root_prompt("Song to delete (via index): ")
     if not cmd_input.isnumeric():
@@ -366,7 +348,7 @@ def delete_song():
         print("! This will also delete the file: ")
         print(f"! > {os.path.abspath(song['path'])}")
     make_sure = _root_prompt("? [y/N]: ")
-    if make_sure in {"y", "Y"}:
+    if make_sure in YES_CHARS:
         ls.del_from_csv(row_index)
         if song["path"] != cv.NO_PATH:
             os.remove(song["path"])
@@ -376,11 +358,7 @@ def delete_song():
 
 
 def single_play(bu):
-    """
-    Plays a song but doesn't add it to the list of songs. However it is
-    recorded in the `BaseInterface` object (bu), thus will be tracked after
-    replay.
-    """
+    """Play a song from a URL only once. Doesn't add it to the library."""
 
     cmd_input = _root_prompt("[>] song URL [played only once]: ")
     if "https" not in cmd_input:
@@ -404,10 +382,7 @@ def single_play(bu):
 
 
 def correct_title(bu):
-    """
-    Uses the `correct_title()` function from `lib_sorter`. Makes sure
-    the user corrects the title it actually wants to correct as it is final.
-    """
+    """Correct the title of a song in the library."""
     cmd_input = _root_prompt("[>] index of title to correct: ")
     if cmd_input.isnumeric():
         cmd_num = int(cmd_input)
@@ -427,10 +402,7 @@ def correct_title(bu):
 
 
 def rename_title(bu):
-    """
-    Rename a title specified by index. Make sure the user corrects the title it
-    actually wants to correct as it is final.
-    """
+    """Rename the title of a song in the library."""
     cmd_input = _root_prompt("[>] index of title to rename: ")
     if cmd_input.isnumeric():
         cmd_num = int(cmd_input)
@@ -446,7 +418,7 @@ def rename_title(bu):
             song = bu.table.iloc[cmd_num].copy(deep=True)
             new_title = _root_prompt("New title >")
             if new_title == "":
-                new_title = f"__DEFAULT_{str(np.random.randint(0,1000))}"
+                new_title = f"__DEFAULT_{str(np.random.randint(0, 1000))}"
             ls.del_from_csv(cmd_num)
             ls.write_table_to_csv(new_title, song["url"], song["duration"])
             bu.show_article()
@@ -474,7 +446,7 @@ def command_help():
 
 def decision_tree(bu, cmd_input):
     """
-    Decides what to execute given an input from the terminal.
+    Handle user commands and navigate the decision tree.
     Could be implemented with a dict... but it is pretty fast anyway,
     doesn't get executed much.
     """
@@ -530,7 +502,8 @@ def decision_tree(bu, cmd_input):
     return to_pass
 
 
-def main_loop():
+def main_loop() -> None:
+    """Main loop to handle user input and commands."""
     bu = ui_first.BaseInterface()
     bu.show_article()
     cmd_input = None

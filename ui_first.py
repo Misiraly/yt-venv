@@ -75,7 +75,7 @@ class ProgressBar:
         Indicates if the media is part of a playlist.
     """
 
-    def __init__(self, seconds: int, media: Any, title: str, isplaylist: bool) -> None:
+    def __init__(self, seconds: int, media, title: str, isplaylist: bool) -> None:
         self.scr_l = cv.PLR_L
         self.seconds = seconds
         self.is_video_long = seconds > 3599
@@ -118,7 +118,9 @@ class ProgressBar:
         if key in STATUS_CHAR and key not in {"n", "np"}:
             self.key = key
         self.time_bar = formatted_time(_c_time, self.is_video_long)
-        progress = STATUS_ICON[self.key] + " " + self.time_bar + bar + neg_bar + self.full_time
+        progress = (
+            STATUS_ICON[self.key] + " " + self.time_bar + bar + neg_bar + self.full_time
+        )
         print(progress, end="\r")
 
 
@@ -170,7 +172,9 @@ def formatted_time(seconds: int, is_long: bool = False) -> str:
     return f"{hour}:{minute}:{sec}"
 
 
-def player_loop(media: Any, v_title: str, v_duration: int, isplaylist: bool, v: Value, t_v: Value) -> bool:
+def player_loop(
+    media, v_title: str, v_duration: int, isplaylist: bool, v: Value, t_v: Value
+) -> bool:
     """Main loop to handle media playback and user input.
 
     Parameters
@@ -239,7 +243,7 @@ def player_loop(media: Any, v_title: str, v_duration: int, isplaylist: bool, v: 
     return watched
 
 
-def cli_gui(v_title: str, v_duration: int, media: Any, isplaylist: bool) -> dict:
+def cli_gui(v_title: str, v_duration: int, media, isplaylist: bool) -> dict:
     """Handle user inputs and graphic output for the media being played.
 
     Parameters
@@ -268,7 +272,9 @@ def cli_gui(v_title: str, v_duration: int, media: Any, isplaylist: bool) -> dict
     p_check_end = Process(target=check_end, args=(v_duration, v, t_v))
     p_ask.start()
     p_check_end.start()
-    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)  # TODO: media.play() is hidden inside this func, but media.stop() is outside!
+    post_vars["watched"] = player_loop(
+        media, v_title, v_duration, isplaylist, v, t_v
+    )  # TODO: media.play() is hidden inside this func, but media.stop() is outside!
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()
@@ -295,8 +301,10 @@ class BaseInterface:
         "header": ["\n"] + formatter.abc_rower("    PYTHON MUSIC") + ["\n"],
         "body": [],
         "prompt": ["[>] URL or song Number [>]: "],
-        "closer": ["\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***", 
-                   "-" * cv.SCR_L + "\n"],
+        "closer": [
+            "\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***",
+            "-" * cv.SCR_L + "\n",
+        ],
     }
     page_width = cv.SCR_L
     song = {
