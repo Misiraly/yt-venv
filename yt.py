@@ -255,7 +255,7 @@ def play_random(bu):
         songs = bu.table.iloc[rand_choice].copy(deep=True)
         titles = songs[["title"]]
         print(titles)
-        playit = _root_prompt(f"\n>>Play first song on the list?[y/N/r]> ")
+        playit = _root_prompt("\n>>Play first song on the list?[y/N/r]> ")
         if playit.lower() in {"r", "random"}:
             continue
         if playit in YES_CHARS:
