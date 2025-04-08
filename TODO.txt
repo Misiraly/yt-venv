@@ -1,6 +1,5 @@
 # TODO
  - CHECK IF THE FILENAME TO BE DOWNLOADED ALREADY EXISTS!
- - re-download song for better quality
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
  - implement better GUI -- maybe with curses... it may be necessary to be able
@@ -22,6 +21,7 @@ to govern a whole screen, not just the last line of the cmd
    (- maybe tab that slates through periods as well)
 
 # DONE
+ - re-download song for better quality
  - timestamps wrongly displayed, duration sorted in a dumb way
  - random: gives 5 random choices, first is automatically chosen (=='y')
  - delhusa djon: plays Nika se Perimeno over and over
