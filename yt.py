@@ -537,11 +537,14 @@ def decision_tree(bu, cmd_input):
 
 def main_loop() -> None:
     """Main loop to handle user input and commands."""
-    bu = ui_first.BaseInterface()
-    bu.show_article()
-    cmd_input = None
-    while True:
-        cmd_input = decision_tree(bu, cmd_input)
+    try:
+        bu = ui_first.BaseInterface()
+        bu.show_article()
+        cmd_input = None
+        while True:
+            cmd_input = decision_tree(bu, cmd_input)
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
