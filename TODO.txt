@@ -1,5 +1,6 @@
 # TODO
  - CHECK IF THE FILENAME TO BE DOWNLOADED ALREADY EXISTS!
+ - re-download song for better quality
  - add playlist: creates a playlist from numbers provided
  - search playlist: shows existing playlists
  - implement better GUI -- maybe with curses... it may be necessary to be able

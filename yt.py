@@ -142,7 +142,7 @@ def playNonExistent(url: str):
 
 
 def play_add_Song(bu, isplaylist=False):
-    """Play a song and add it to the library if watched."""
+    """Play a song, add it to the library if not yet there."""
     media, song = playExisting(bu)
     post_vars = ui_first.cli_gui(song["title"], song["duration"], media, isplaylist)
     if post_vars["watched"]:
@@ -357,6 +357,36 @@ def delete_song():
         print("[INFO] deletion stopped.")
 
 
+@divide_decorator
+def redownload_song(bu):
+    """Redownload a song from the library."""
+    df = bu.table
+    cmd_input = _root_prompt("Song to re-download (via index): ")
+    if not cmd_input.isnumeric():
+        print(f"[ERROR] wrong index ({cmd_input}), use only integers.")
+        return
+    row_index = int(cmd_input)
+    if row_index not in df.index:
+        print(f"[ERROR] index ({row_index}) out of bounds.")
+        return
+    song = dict(df.iloc[row_index])
+    title = song["title"]
+    print("! Are you sure to re-download the song: ")
+    print(f"! > {title}")
+    make_sure = _root_prompt("? [y/N]: ")
+    if make_sure not in YES_CHARS:
+        print("[INFO] re-download aborted.")
+        return
+    if song["path"] != cv.NO_PATH:
+        os.remove(song["path"])
+        print(f"[INFO] deleted song: {title}")
+        song["path"] = cv.NO_PATH
+    print(f"[INFO] attempting to re-download song: {title}")
+    bu.song = song
+    ls.add_attribute(song["title"], cv.NO_PATH, "path")
+    playExisting(bu)
+
+
 def single_play(bu):
     """Play a song from a URL only once. Doesn't add it to the library."""
 
@@ -465,6 +495,9 @@ def decision_tree(bu, cmd_input):
         correct_title(bu)
     elif cmd_input == "rename title":
         rename_title(bu)
+        correct_title(bu)
+    elif cmd_input == "redownload":
+        redownload_song(bu)
     elif cmd_input == "tab":
         bu.show_article()
     elif cmd_input == "date":
