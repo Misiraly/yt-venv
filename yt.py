@@ -545,6 +545,7 @@ def main_loop() -> None:
             cmd_input = decision_tree(bu, cmd_input)
     except Exception as e:
         print(e)
+        input("\n\nif you do anything this will close...")
 
 
 if __name__ == "__main__":
