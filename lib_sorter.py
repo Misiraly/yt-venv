@@ -106,6 +106,12 @@ def manipulate_playlist(
     )
 
 
+def retrieve_single_pl(cur_playlist) -> pd.DataFrame:
+    df = pull_csv_as_df()
+    ndf = pd.concat([df[df["uid"] == uid] for uid in cur_playlist], ignore_index=False)
+    return ndf
+
+
 def pull_csv_as_df(table_path=MUSIC_TABLE) -> pd.DataFrame:
     """Pull the music library from a CSV file into a DataFrame."""
     df = pd.read_csv(table_path, index_col=[0])

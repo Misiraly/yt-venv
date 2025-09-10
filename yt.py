@@ -450,12 +450,12 @@ def playlist_loop(bu):
         else:
             print("\nNo such playlist.")
         if cur_playlist:
-            mask = bu.table["uid"].isin(cur_playlist)
+            df = ls.retrieve_single_pl(cur_playlist)
             if is_command == "show":
                 print(f"\nPLAYLIST: {name}")
-                print(bu.table.loc[mask, "title"].to_string())
+                print(df["title"].to_string())
             else:
-                ids = bu.table.loc[mask].index
+                ids = df.index
                 play_playlist(ids, bu, f"Playing the beautiful {name} collection.")
                 break
 
@@ -636,7 +636,9 @@ def decision_tree(bu, cmd_input):
     """
     if cmd_input is None:
         bu.refresh_article()
-        print("[ ser : del : correct title : rename title : redownload : tab : date : playlist]")
+        print(
+            "[ ser : del : correct title : rename title : redownload : tab : date : playlist]"
+        )
         print("[freq : re-freq : r : single : random : shuffle : autist : `,` : help]")
         prompt = "[>] URL or song Number /quit - 'q'/ [>]: "
         cmd_input = _root_prompt(prompt)
