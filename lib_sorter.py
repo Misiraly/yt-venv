@@ -1,19 +1,120 @@
+import hashlib
 from datetime import datetime
 
 import pandas as pd
 import regex as re
+import yaml
 
 import constant_values as cv
 
 # Constants
 MUSIC_TABLE = "data/music_table.csv"
+PLAYLISTS = "data/playlists.yaml"
 # should have format as in "data/test-table.csv"
 
 
-def pull_csv_as_df() -> pd.DataFrame:
+def create_playlist_file(pl_path=PLAYLISTS):
+    yd = {}
+    with open(pl_path, "w") as file:
+        yaml.dump(yd, file)
+
+
+def read_playlists(pl_path=PLAYLISTS) -> dict:
+    with open(pl_path) as file:
+        yd = yaml.safe_load(file)
+    return yd
+
+
+def get_playlist(playlist_name, pl_path=PLAYLISTS):
+    yd = read_playlists(pl_path)
+    if playlist_name in yd:
+        return yd[playlist_name]
+    print("Playlist doesn't exist or is empty.")
+    return []
+
+
+def write_to_playlist(pl_path, yd):
+    with open(pl_path, "w") as file:
+        yaml.dump(yd, file, default_flow_style=False, sort_keys=False, indent=2)
+
+
+def _validate_song_list(song_list):
+    if not isinstance(song_list, list):
+        raise ValueError("The list of songs specified is not a list.", song_list)
+    for uid in song_list:
+        if not isinstance(uid, str) or len(uid) != cv.UID_LENGTH:
+            raise ValueError("Each song UID must be a string of correct length.", uid)
+
+
+def clean_playlist_input(numbers_list, available_indeces):
+    raw_list = numbers_list.replace(" ", "").split(",")
+    indeces = []
+    for i in raw_list:
+        if len(i) > 0 and i.isnumeric() and int(i) in available_indeces:
+            indeces.append(int(i))
+        elif len(i) > 0:
+            print(f"Faulty index: {i}")
+    return indeces
+
+
+def add_uids_to_playlist(
+    playlist_name,
+    uids,
+    option,
+    table_path=MUSIC_TABLE,
+    pl_path=PLAYLISTS,
+    pl_out=PLAYLISTS,
+    new_name=None,
+):
+    yd = read_playlists(pl_path)
+    _validate_song_list(uids)
+    if option != "create" and playlist_name not in yd:
+        print(f"Playlist specified ({playlist_name}) doesn't exist.")
+        return
+    if option == "create":
+        if playlist_name in yd:
+            print(f"Playlist by this name ({playlist_name}) already exists.")
+            return
+        yd[playlist_name] = uids
+    elif option == "delete":
+        del yd[playlist_name]
+    elif option == "add":
+        yd[playlist_name] = yd[playlist_name] + uids
+    elif option == "remove":
+        yd[playlist_name] = [el for el in yd[playlist_name] if el not in uids]
+    elif option == "rename":
+        yd[new_name] == yd.pop(playlist_name)
+    else:
+        print(f"Action '{option}' not possible for playlist manipulation.")
+    write_to_playlist(pl_out, yd)
+
+
+def manipulate_playlist(
+    playlist_name,
+    numbers_list,
+    option,
+    table_path=MUSIC_TABLE,
+    pl_path=PLAYLISTS,
+    pl_out=PLAYLISTS,
+    new_name=None,
+):
+    df = pull_csv_as_df(table_path)
+    indeces = clean_playlist_input(numbers_list, df.index.values)
+    uids = df.iloc[indeces]["uid"].values.tolist()
+    add_uids_to_playlist(
+        playlist_name, uids, option, table_path, pl_path, pl_out, new_name
+    )
+
+
+def pull_csv_as_df(table_path=MUSIC_TABLE) -> pd.DataFrame:
     """Pull the music library from a CSV file into a DataFrame."""
-    df = pd.read_csv(MUSIC_TABLE, index_col=[0])
+    df = pd.read_csv(table_path, index_col=[0])
     return df
+
+
+def generate_uid(title, url, path):
+    base = f"{title}-{url}-{path}"
+    return hashlib.sha1(base.encode()).hexdigest()[: cv.UID_LENGTH]
 
 
 def write_table_to_csv(title_in: str, url: str, duration: int) -> None:
@@ -78,6 +179,7 @@ def song_to_table_csv(song) -> None:
             song["add_date"] = str(datetime.now())
         if "watched" not in song:
             song["watched"] = 0
+        song["uid"] = generate_uid(song["title"], song["url"], song["path"])
         df.loc[len(df.index)] = song
         # sort_values sorts all capital letters before lowercase letters...
         # we do not want this.
@@ -85,6 +187,7 @@ def song_to_table_csv(song) -> None:
             by=["title"], key=lambda col: col.str.lower(), ignore_index=True
         )
         out_df.to_csv(MUSIC_TABLE)
+        return song["uid"]
 
 
 def correct_title(title_in: str) -> str:

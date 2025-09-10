@@ -3,7 +3,9 @@ yt-dlp
 pandas
 regex
 python-vlc
+pyyaml
 black
 isort
 flake8
 pyment
+pytest

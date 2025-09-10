@@ -3,3 +3,4 @@ yt-dlp
 pandas
 regex
 python-vlc
+pyyaml

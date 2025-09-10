@@ -1,12 +1,10 @@
 __pycache__/
 library/
 scratch/
+.pytest_cache/
 
 data/music_lib*
 data/music_table*.csv
+data/playlists.yaml
 
-test*.*
-scratch*.py
-
-# this might be too much haha :D
-*dev*.*
+scratch*.*

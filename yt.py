@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 from vlc import MediaPlayer
@@ -13,6 +14,7 @@ from modules import search_text as st
 # Constants
 EXIT_CHARS = {"q", "exit"}
 YES_CHARS = {"y", "Y"}
+NAY_CHARS = {"n", "N"}
 LIBRARY = "library"
 EXT = "ogg"
 
@@ -51,32 +53,59 @@ def divide_decorator(func):
     return wrapper
 
 
-def check_title_fix(title: str, url: str, s_title: str) -> str:
-    """Check and fix the title if it already exists or is empty."""
-    if ls.is_path_occupied(f"{LIBRARY}/{title}.{EXT}"):
-        print("\nWarning! The title already exists in the library!")
-        print(s_title)
-        print(url)
-        new_name = input("Filename to use (if empty, a hash from url will be used): ")
-        title = new_name
+def title_warning(msg, new_name, old_title):
+    print(f"\nWarning! {msg}")
+    print("old name:", old_title)
+    print("new name:", new_name)
 
-    if title == "":
-        print("\nWarning! The title is empty!")
-        print(s_title)
-        print(url)
-        new_name = input("Filename to use (if empty, a hash from url will be used): ")
-        title = new_name
-        if new_name == "":
-            title = ls.correct_title(url)
-            print(
-                "Warning! Empty string given! Using video url hash as music file name!"
-            )
-    return title
+
+def force_simple_name(title, url) -> str:
+    problematic = False
+    title_for_path = ls.correct_title(title)
+    if len(title) < 5:
+        problematic = True
+        title_for_path = title_for_path + url
+    if os.path.exists(f"{LIBRARY}/{title_for_path}.{EXT}"):
+        problematic = True
+        title_for_path = title_for_path + "x"
+    return title_for_path, problematic
+
+
+def title_string_sense(title: str, check_path: bool) -> str:
+    """Check and fix the title if it already exists or is empty."""
+    new_name = title
+    filename_prompt = "New filename to use:"
+    print("checking path...")
+    if check_path and os.path.exists(f"{LIBRARY}/{new_name}.{EXT}"):
+        title_warning("This title already exists!", new_name, title)
+        new_name = input(filename_prompt)
+    if 0 < len(new_name) < cv.TITLE_MIN:
+        title_warning("The title is VERY SHORT!", new_name, title)
+        answer = input("Do you want to rename? [Y/n]: ")
+        if answer not in NAY_CHARS:
+            new_name = input(filename_prompt)
+    if new_name == "":
+        title_warning("The title string is EMPTY!", new_name, title)
+        new_name = input(filename_prompt)
+    print(
+        "-",
+        new_name,
+        "-",
+        title,
+        "-",
+    )
+    if new_name == title:
+        return new_name
+    return title_string_sense(new_name, check_path)
 
 
 def playTheSong(url: str):
     """Play the song from the given URL."""
-    ydl_opts = {"format": "bestaudio", "no_check_certificate": True}
+    ydl_opts = {
+        "format": "bestaudio",
+        "no_check_certificate": True,
+        "abort_on_unavailable_fragments": True,
+    }
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=False)
     media = MediaPlayer(song_info["url"], ":no-video")
@@ -87,11 +116,12 @@ def playExisting(bu):
     """Play an existing song from the library."""
     song = dict(bu.song)
     extract = song["duration"] == cv.NO_DURATION
-    download = song["path"] == cv.NO_PATH
+    download = not os.path.exists(song["path"])
     if download:
-        title = ls.correct_title(song["title"])
-        title = check_title_fix(title, song["url"], song["title"])
-        path = f"{LIBRARY}/{title}.{EXT}"
+        print(f"Did not find file at: {song['path']} for song {song["title"]}")
+        title_for_path = ls.correct_title(song["title"])
+        title_for_path = title_string_sense(title_for_path, check_path=True)
+        path = f"{LIBRARY}/{title_for_path}.{EXT}"
     else:
         path = song["path"]
     ydl_opts = {
@@ -99,6 +129,7 @@ def playExisting(bu):
         "format": "bestaudio",
         "no_check_certificate": True,
         "outtmpl": path,
+        "abort_on_unavailable_fragments": True,
     }
     if extract or download:
         with YoutubeDL(ydl_opts) as ydl:
@@ -113,6 +144,79 @@ def playExisting(bu):
     return MediaPlayer(path), song
 
 
+def tryDownloadThreeTimes(ydl_opts, videos, path):
+    full_list = [(video, 0) for video in videos]
+    retry = []
+    problematics = []
+    uids = []
+    while full_list:
+        with YoutubeDL(ydl_opts) as ydl:
+            for idx, element in enumerate(full_list, start=1):
+                video = element[0]
+                try:
+                    video_url = f"https://www.youtube.com/watch?v={video['id']}"
+                    print(f"Downloading video {idx}: {video.get('title', 'N/A')}")
+                    ydl.download([video_url])
+                    title_for_path, problematic = force_simple_name(
+                        video["title"], video_url
+                    )
+                    if problematic:
+                        problematics.append(video["title"])
+                    n_path = f"{LIBRARY}/{title_for_path}.{EXT}"
+                    song = {
+                        "title": video["title"],
+                        "duration": video["duration"],
+                        "path": n_path,
+                        "url": video_url,
+                    }
+                    uid = ls.song_to_table_csv(song)
+                    uids.append(uid)
+                    os.rename(path, n_path)
+                    print(f"File saved to {n_path}")
+                except DownloadError:
+                    trial = (element[0], element[1] + 1)
+                    if trial[1] < 3:
+                        retry.append(element)
+                    else:
+                        print(f"failed to download 3 times {element[0]}")
+        full_list = retry
+        retry = []
+    return problematics, uids
+
+
+def downloadPlaylist(playlist_url: str):
+    """Download full playlist."""
+    ydl_extract_opts = {
+        "quiet": True,
+        "extract_flat": True,  # Only get metadata, not media
+    }
+
+    print("\nExtracting playlist information...")
+    with YoutubeDL(ydl_extract_opts) as ydl:
+        playlist_dict = ydl.extract_info(playlist_url, download=False)
+        playlist_name = playlist_dict.get("title", "N/A")
+        videos = playlist_dict.get("entries", [])
+    print(f"Attempting to download {playlist_name}")
+
+    path = f"{LIBRARY}/{cv.TEMPORARY}.{EXT}"
+    ydl_opts = {
+        "extract_audio": True,
+        "format": "bestaudio",
+        "no_check_certificate": True,
+        "outtmpl": path,
+        "abort_on_unavailable_fragments": True,
+    }
+    problematics, uids = tryDownloadThreeTimes(ydl_opts, videos, path)
+    if problematics:
+        print(
+            "There was a problem finding a suitable filename for the following titles: "
+        )
+        for el in problematics:
+            print(el)
+    print("Creating new playlist with new songs...")
+    ls.add_uids_to_playlist(playlist_name, uids, "create")
+
+
 def playNonExistent(url: str):
     """Play a song that is not in the library."""
     song = {}
@@ -122,13 +226,13 @@ def playNonExistent(url: str):
         "format": "bestaudio",
         "no_check_certificate": True,
         "outtmpl": path,
+        "abort_on_unavailable_fragments": True,
     }
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=True)
-    song["title"] = ls.correct_title(song_info["title"])
-    title = ls.correct_title(song_info["title"])
-    title = check_title_fix(title, url, song_info["title"])
-    n_path = f"{LIBRARY}/{title}.{EXT}"
+    title_for_path = ls.correct_title(song_info["title"])
+    title_for_path = title_string_sense(title_for_path, check_path=True)
+    n_path = f"{LIBRARY}/{title_for_path}.{EXT}"
     song = {
         "title": song_info["title"],
         "duration": song_info["duration"],
@@ -213,6 +317,11 @@ def play_new(bu, cmd_input):
     """Play a song not yet tracked by our library."""
     if "https" not in cmd_input:
         search_table(cmd_input)
+    elif "playlist" in cmd_input:
+        print("\nThis action will download a whole playlist.")
+        if not_sure():
+            return
+        downloadPlaylist(cmd_input)
     else:
         url = cmd_input
         print(url)
@@ -298,15 +407,57 @@ def play_autist(bu, cmd_input):
 
 
 def play_manual_playlist(bu, cmd_input):
-    songs = cmd_input.replace(" ", "").split(",")
-    playlist = []
-    for song_no in songs:
-        if song_no.isnumeric() and int(song_no) in bu.table.index.values:
-            playlist.append(int(song_no))
-        else:
-            print("\n[WARNING] Faulty element within the list!")
-            print(f"Element in question: `{song_no}`\n")
+    playlist = ls.clean_playlist_input(cmd_input)
     play_playlist(playlist, bu, "MY PLAYLIST. FUCK OFF WE ARE FULL.")
+
+
+def retrieve_command(text):
+    if "--" in text.split(" ")[-1]:
+        cmd = text.split(" ")[-1].replace("--", "")
+        pos = text.index("--")
+        name = text[:pos].strip()
+        return name, cmd
+    return text, None
+
+
+def playlist_loop(bu):
+    while True:
+        yd, index_map = bu.display_playlists()
+        print("| Choose playlist (index/name) to play, `--show`  |")
+        print("| `--create`, `--delete`, `--add`, or `--remove`  |")
+        key = input("[>] ")
+        cur_playlist = []
+        key, is_command = retrieve_command(key)
+        if key.lower() in EXIT_CHARS:
+            break
+        elif is_command in ["create", "delete", "add", "remove"]:
+            info = is_command + " with" if is_command == "create" else is_command
+            if is_command != "delete":
+                to_add = input(f"Song indices to {info}> ")
+            new_name = None
+            if is_command == "rename":
+                new_name = input(f"New name for the playlist `{key}` > ")
+            if not_sure():
+                print("Aborting operation.")
+                continue
+            ls.manipulate_playlist(key, to_add, is_command, new_name=new_name)
+        elif key in yd:
+            name = key
+            cur_playlist = yd[key]
+        elif key in index_map:
+            name = index_map[key]
+            cur_playlist = yd[name]
+        else:
+            print("\nNo such playlist.")
+        if cur_playlist:
+            mask = bu.table["uid"].isin(cur_playlist)
+            if is_command == "show":
+                print(f"\nPLAYLIST: {name}")
+                print(bu.table.loc[mask, "title"].to_string())
+            else:
+                ids = bu.table.loc[mask].index
+                play_playlist(ids, bu, f"Playing the beautiful {name} collection.")
+                break
 
 
 def find_options(cmd_input):
@@ -420,14 +571,15 @@ def correct_title(bu):
             print("[ERROR], number not on list")
         print("Song to be corrected: ")
         song = bu.table.iloc[cmd_num].copy(deep=True)
-        ole_title = song["title"]
-        print(f"> {ole_title}")
+        old_title = song["title"]
+        print(f"> {old_title}")
         if not_sure():
             return
         else:
-            ls.del_from_csv(cmd_num)
-            title = ls.correct_title(song["title"])
-            ls.write_table_to_csv(title, song["url"], song["duration"])
+            title = title_string_sense(
+                ls.correct_title(song["title"]), check_path=False
+            )
+            ls.add_attribute(song["title"], title, "title")
             bu.show_article()
 
 
@@ -440,18 +592,18 @@ def rename_title(bu):
             print("[ERROR], number not on list")
         print("Song to be renamed: ")
         song = bu.table.iloc[cmd_num].copy(deep=True)
-        ole_title = song["title"]
-        print(f"> {ole_title}")
+        old_title = song["title"]
+        print(f"> {old_title}")
         if not_sure():
             return
         else:
             song = bu.table.iloc[cmd_num].copy(deep=True)
             new_title = _root_prompt("New title >")
-            if new_title == "":
-                new_title = f"__DEFAULT_{str(np.random.randint(0, 1000))}"
-            ls.del_from_csv(cmd_num)
-            ls.write_table_to_csv(new_title, song["url"], song["duration"])
+            new_title = title_string_sense(new_title, check_path=False)
+            ls.add_attribute(song["title"], new_title, "title")
             bu.show_article()
+    else:
+        print("Not an integer, renaming aborted.")
 
 
 def command_help():
@@ -460,10 +612,12 @@ def command_help():
     print("  - del :: delete a song")
     print("  - correct title :: remove unusual characters from title")
     print("  - rename title :: rename title")
+    print("  - redownload :: redownload song")
     print("  - tab :: print the list of songs")
     print("  - date :: print songs are by date, descending")
     print("  - freq :: print songs arranged by popularity, descending")
     print("  - re-freq :: print songs arranged by popularity, ascending")
+    print("  - playlist :: show playlist actions")
     print("  - r :: replay a song")
     print("  - single :: play a url without adding it to the library")
     print("  - random :: play a random song. Use '--force' to play it automatically")
@@ -482,8 +636,8 @@ def decision_tree(bu, cmd_input):
     """
     if cmd_input is None:
         bu.refresh_article()
-        print("[ser : del : correct title : rename title : tab : date : freq]")
-        print("[re-freq : r : single : random : shuffle : autist : `,` : help]")
+        print("[ ser : del : correct title : rename title : redownload : tab : date : playlist]")
+        print("[freq : re-freq : r : single : random : shuffle : autist : `,` : help]")
         prompt = "[>] URL or song Number /quit - 'q'/ [>]: "
         cmd_input = _root_prompt(prompt)
     to_pass = None
@@ -495,7 +649,6 @@ def decision_tree(bu, cmd_input):
         correct_title(bu)
     elif cmd_input == "rename title":
         rename_title(bu)
-        correct_title(bu)
     elif cmd_input == "redownload":
         redownload_song(bu)
     elif cmd_input == "tab":
@@ -506,6 +659,8 @@ def decision_tree(bu, cmd_input):
         bu.show_article_by_watched()
     elif cmd_input == "re-freq":
         bu.show_article_by_least_watched()
+    elif cmd_input == "playlist":
+        playlist_loop(bu)
     elif cmd_input == "help":
         command_help()
     else:
@@ -535,18 +690,27 @@ def decision_tree(bu, cmd_input):
     return to_pass
 
 
-def main_loop() -> None:
+def core() -> None:
+    bu = ui_first.BaseInterface()
+    bu.show_article()
+    cmd_input = None
+    while True:
+        cmd_input = decision_tree(bu, cmd_input)
+
+
+def main() -> None:
     """Main loop to handle user input and commands."""
-    try:
-        bu = ui_first.BaseInterface()
-        bu.show_article()
-        cmd_input = None
-        while True:
-            cmd_input = decision_tree(bu, cmd_input)
-    except Exception as e:
-        print(e)
-        input("\n\nif you do anything this will close...")
+    if len(sys.argv) > 1:
+        try:
+            core()
+        except Exception as e:
+            print("~ " * 40)
+            print(sys.argv[1])
+            print(e)
+            input("\n\nif you do anything this will close...")
+    else:
+        core()
 
 
 if __name__ == "__main__":
-    main_loop()
+    main()

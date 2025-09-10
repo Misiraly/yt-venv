@@ -12,5 +12,9 @@ INTERVAL_INCR = 0.1  # seconds
 NO_PATH = "No Path"
 NO_DURATION = -999
 
+# sense check
+TITLE_MIN = 5
+UID_LENGTH = 16
+
 # placeholders
 TEMPORARY = "_temporary_file_name_"

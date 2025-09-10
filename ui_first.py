@@ -307,16 +307,13 @@ class BaseInterface:
         ],
     }
     page_width = cv.SCR_L
-    song = {
-        "title": "dummy",
-        "url": "https://www.youtube.com/watch?v=fWh6J5Tg274",
-    }
     wspace = " "
     ell = "..."
     playlist = []
 
     def __init__(self):
         self.table = ls.pull_csv_as_df()
+        self.song = self.table.iloc[0]
 
     def print_closer(self):
         """ """
@@ -368,3 +365,14 @@ class BaseInterface:
         """Print the library arranged by the least listened to songs."""
         df = self.table.sort_values(by="watched", ascending=False)
         print(df.to_string(columns=["title", "watched"], max_colwidth=cv.SCR_L - 15))
+
+    def display_playlists(self) -> None:
+        yd = ls.read_playlists()
+        for line in formatter.abc_rower("Playlists"):
+            print(line)
+        print()
+        index_map = {str(i): key for i, key in enumerate(yd.keys())}
+        for si, key in index_map.items():
+            print(" -", si, key)
+        print()
+        return yd, index_map

@@ -1,39 +1,46 @@
 # TODO
- - CHECK IF THE FILENAME TO BE DOWNLOADED ALREADY EXISTS!
- - add playlist: creates a playlist from numbers provided
- - search playlist: shows existing playlists
- - implement better GUI -- maybe with curses... it may be necessary to be able
-to govern a whole screen, not just the last line of the cmd
-   - possibility to toggle magnitude of seconds that can be jumped while
-   playing, the magnitude of the jump needs to be displayed above the player...
- - tidy up existing code:
-   - download/playing mechanism could be more robust, ie., what if a music file
-   doesn't exist but we have it listed in our library?
-   - printing mechanism is not too coherent
-   - ui_first objects' printing might be very inefficient
-   - ui_first decision making -- it is with if-else statements, but couldn't be
-   it done better with a dictionary?
+  - create a better decision tree. Since decisions are executed on a graph, 
+  maybe a decision matrix could be in order. Decisions now go several layer
+  deep, it's getting scary
+  - switch pandas to polars
+  - add tests
+  - force search: play the song closest to search value
+  - implement better GUI -- maybe with curses... it may be necessary to be able
+  to govern a whole screen, not just the last line of the cmd
+    - possibility to toggle magnitude of seconds that can be jumped while
+    playing, the magnitude of the jump needs to be displayed above the
+    player...
+  - tidy up existing code:
+    - download/playing mechanism could be more robust, ie., what if a music
+    file doesn't exist but we have it listed in our library?
+    - printing mechanism is not too coherent
+    - ui_first objects' printing might be very inefficient
+    - ui_first decision making -- it is with if-else statements, but couldn't
+    it be done better with a dictionary?
+  - store metadata after closing: last song played, at what timestamp it was
+  left off etc
 
 # Partially DONE
- - add "popularity" counter: # of times songs has been listened to 
-   (- maybe weighed by time? or slated by periods (weeks, months, year...))
- - add "most listened to" tab: songs in order of number of listens
-   (- maybe tab that slates through periods as well)
+  - add playlist: creates a playlist from numbers provided
+  - search playlist: shows existing playlists
+  - add "popularity" counter: # of times songs has been listened to 
+    (- maybe weighed by time? or slated by periods (weeks, months, year...))
+  - add "most listened to" tab: songs in order of number of listens
+    (- maybe tab that slates through periods as well)
 
 # DONE
- - re-download song for better quality
- - timestamps wrongly displayed, duration sorted in a dumb way
- - random: gives 5 random choices, first is automatically chosen (=='y')
- - delhusa djon: plays Nika se Perimeno over and over
- - download & store songs in a library instead of downloading them everytime,
- read and play already existing songs from the library
- - delete songs from table and library
- - possibilty to jump to timestamps, 10s back-forth
-use number keys to get to the corresponding 10% mark (key 8->80%...)
+  - download FULL playlists from yt!
+  - CHECK IF THE FILENAME TO BE DOWNLOADED ALREADY EXISTS!
+  - re-download song for better quality
+  - timestamps wrongly displayed, duration sorted in a dumb way
+  - random: gives 5 random choices, first is automatically chosen (=='y')
+  - delhusa djon: plays Nika se Perimeno over and over
+  - download & store songs in a library instead of downloading them everytime,
+  read and play already existing songs from the library
+  - delete songs from table and library
+  - possibilty to jump to timestamps, 10s back-forth
+  use number keys to get to the corresponding 10% mark (key 8->80%...)
 
 # ABANDONED
- - create a better decision tree. Since decisions are executed on a graph, maybe
-a decision matrix could be in order
-    > Looking at it better, a little tweak was more than enough.
- - download/playing mechanism is ugly, risky and bloated
-    > not as relevant, rewritten as above.
+  - download/playing mechanism is ugly, risky and bloated
+      > not as relevant, rewritten as above.

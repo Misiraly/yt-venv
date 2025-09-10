@@ -1,5 +1,5 @@
 # Constants
-ABC_FILE = r"modules\abc.txt"
+ABC_FILE = "modules/abc.txt"
 LINE_BREAK_THRESHOLD = 3
 
 
