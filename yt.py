@@ -2,6 +2,8 @@ import os
 import sys
 
 import numpy as np
+
+os.environ["VLC_VERBOSE"] = "-1"
 from vlc import MediaPlayer
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
@@ -144,11 +146,12 @@ def playExisting(bu):
     return MediaPlayer(path), song
 
 
-def tryDownloadThreeTimes(ydl_opts, videos, path):
+def tryDownloadFiveTimes(ydl_opts, videos, path):
     full_list = [(video, 0) for video in videos]
     retry = []
     problematics = []
     uids = []
+    failed = []
     while full_list:
         with YoutubeDL(ydl_opts) as ydl:
             for idx, element in enumerate(full_list, start=1):
@@ -175,12 +178,16 @@ def tryDownloadThreeTimes(ydl_opts, videos, path):
                     print(f"File saved to {n_path}")
                 except DownloadError:
                     trial = (element[0], element[1] + 1)
-                    if trial[1] < 3:
-                        retry.append(element)
+                    if trial[1] < 5:
+                        retry.append(trial)
                     else:
-                        print(f"failed to download 3 times {element[0]}")
+                        failed.append(video.get("title", "N/A"))
         full_list = retry
         retry = []
+    print("Failed to download these songs after 5 attempts: ")
+    for el in failed:
+        print(el)
+    print()
     return problematics, uids
 
 
@@ -206,7 +213,7 @@ def downloadPlaylist(playlist_url: str):
         "outtmpl": path,
         "abort_on_unavailable_fragments": True,
     }
-    problematics, uids = tryDownloadThreeTimes(ydl_opts, videos, path)
+    problematics, uids = tryDownloadFiveTimes(ydl_opts, videos, path)
     if problematics:
         print(
             "There was a problem finding a suitable filename for the following titles: "
@@ -214,7 +221,7 @@ def downloadPlaylist(playlist_url: str):
         for el in problematics:
             print(el)
     print("Creating new playlist with new songs...")
-    ls.add_uids_to_playlist(playlist_name, uids, "create")
+    ls.manipulate_playlist_uids(playlist_name, uids, "create")
 
 
 def playNonExistent(url: str):
@@ -428,20 +435,9 @@ def playlist_loop(bu):
         key = input("[>] ")
         cur_playlist = []
         key, is_command = retrieve_command(key)
-        if key.lower() in EXIT_CHARS:
+        if key.lower() in EXIT_CHARS.union({""}):
             break
-        elif is_command in ["create", "delete", "add", "remove"]:
-            info = is_command + " with" if is_command == "create" else is_command
-            if is_command != "delete":
-                to_add = input(f"Song indices to {info}> ")
-            new_name = None
-            if is_command == "rename":
-                new_name = input(f"New name for the playlist `{key}` > ")
-            if not_sure():
-                print("Aborting operation.")
-                continue
-            ls.manipulate_playlist(key, to_add, is_command, new_name=new_name)
-        elif key in yd:
+        if key in yd:
             name = key
             cur_playlist = yd[key]
         elif key in index_map:
@@ -449,7 +445,19 @@ def playlist_loop(bu):
             cur_playlist = yd[name]
         else:
             print("\nNo such playlist.")
-        if cur_playlist:
+        if is_command in ["create", "delete", "add", "remove"]:
+            info = is_command + " with" if is_command == "create" else is_command
+            if is_command != "delete":
+                to_add = input(f"Song indices to {info}> ")
+            new_name = None
+            if is_command == "rename":
+                new_name = input(f"New name for the playlist `{name}` > ")
+            if not_sure():
+                print("Aborting operation.")
+                continue
+            ls.manipulate_playlist(name, to_add, is_command, new_name=new_name)
+            cur_playlist = []
+        elif cur_playlist:
             df = ls.retrieve_single_pl(cur_playlist)
             if is_command == "show":
                 print(f"\nPLAYLIST: {name}")
@@ -495,12 +503,14 @@ def delete_song():
     title = song["title"]
     print("! Are you sure to delete the song: ")
     print(f"! > {title}")
+    print("! This will also remove the song from all playlists.")
     if song["path"] != cv.NO_PATH:
         print("! This will also delete the file: ")
         print(f"! > {os.path.abspath(song['path'])}")
     make_sure = _root_prompt("? [y/N]: ")
     if make_sure in YES_CHARS:
         ls.del_from_csv(row_index)
+        ls.manipulate_playlist("ALL", str(row_index), "remove_from_all")
         if song["path"] != cv.NO_PATH:
             os.remove(song["path"])
         print(f"[INFO] deleted song: {title}")

@@ -46,7 +46,7 @@ def _validate_song_list(song_list):
             raise ValueError("Each song UID must be a string of correct length.", uid)
 
 
-def clean_playlist_input(numbers_list, available_indeces):
+def clean_playlist_input(numbers_list: str, available_indeces: list):
     raw_list = numbers_list.replace(" ", "").split(",")
     indeces = []
     for i in raw_list:
@@ -57,18 +57,18 @@ def clean_playlist_input(numbers_list, available_indeces):
     return indeces
 
 
-def add_uids_to_playlist(
+def manipulate_playlist_uids(
     playlist_name,
     uids,
     option,
-    table_path=MUSIC_TABLE,
     pl_path=PLAYLISTS,
     pl_out=PLAYLISTS,
     new_name=None,
 ):
     yd = read_playlists(pl_path)
-    _validate_song_list(uids)
-    if option != "create" and playlist_name not in yd:
+    if option not in {"delete", "rename"}:
+        _validate_song_list(uids)
+    if option not in {"create", "remove_from_all"} and playlist_name not in yd:
         print(f"Playlist specified ({playlist_name}) doesn't exist.")
         return
     if option == "create":
@@ -82,8 +82,11 @@ def add_uids_to_playlist(
         yd[playlist_name] = yd[playlist_name] + uids
     elif option == "remove":
         yd[playlist_name] = [el for el in yd[playlist_name] if el not in uids]
+    elif option == "remove_from_all":
+        for key, playlist in yd.items():
+            yd[key] = [el for el in playlist if el not in uids]
     elif option == "rename":
-        yd[new_name] == yd.pop(playlist_name)
+        yd[new_name] = yd.pop(playlist_name)
     else:
         print(f"Action '{option}' not possible for playlist manipulation.")
     write_to_playlist(pl_out, yd)
@@ -101,9 +104,10 @@ def manipulate_playlist(
     df = pull_csv_as_df(table_path)
     indeces = clean_playlist_input(numbers_list, df.index.values)
     uids = df.iloc[indeces]["uid"].values.tolist()
-    add_uids_to_playlist(
-        playlist_name, uids, option, table_path, pl_path, pl_out, new_name
+    print(
+        f"Attempting to {option} with input: {numbers_list}, playlist: {playlist_name}"
     )
+    manipulate_playlist_uids(playlist_name, uids, option, pl_path, pl_out, new_name)
 
 
 def retrieve_single_pl(cur_playlist) -> pd.DataFrame:
@@ -221,6 +225,7 @@ def del_from_csv(row_index: int) -> None:
     row_index : int
         Index of the row to remove.
     """
+    print(f"Deleting index {row_index} from music table.")
     df = pull_csv_as_df()
     new_df = df.drop([row_index]).reset_index(drop=True)
     new_df.to_csv(MUSIC_TABLE)

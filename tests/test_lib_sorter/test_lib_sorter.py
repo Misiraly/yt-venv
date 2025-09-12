@@ -27,16 +27,35 @@ def test_uid_validation():
         lib_sorter._validate_song_list(bad_list)
 
 
-@pytest.mark.parametrize("option", ["create", "add", "remove"])
-def test_playlist_manipulation(option, tmpdir):
-    playlist_file_name = option + "_playlist.yaml"
-    playlist_path = FIXTURES / "inputs/playlists.yaml"
-    expected_pl_path = FIXTURES / "expected_output" / playlist_file_name
-    tmp_pl_path = tmpdir / playlist_file_name
-    playlist_name = "test_list" if option == "create" else "rock"
-    number_list = "1,11332, 4,, 32, 3,,, ,  ,apple, 39,00, 00,pear, 12"
+def test_playlist_manipulation(tmpdir):
+    pl_file_name = "playlists.yaml"
+    input_pl_path = FIXTURES / "inputs" / pl_file_name
+    expected_pl_path = FIXTURES / "expected_output" / pl_file_name
+    tmp_pl_path = tmpdir / pl_file_name
+    add_list = "6,1,11332, 4,, 32, 3,,, ,  ,apple, 39,00, 00,pear, 12"
+    # create, using input yaml to initate playlists file
     lib_sorter.manipulate_playlist(
-        playlist_name, number_list, option, test_table, playlist_path, tmp_pl_path
+        "test_list", add_list, "create", test_table, input_pl_path, tmp_pl_path
+    )
+    # delete
+    lib_sorter.manipulate_playlist(
+        "groovy", "", "delete", test_table, tmp_pl_path, tmp_pl_path
+    )
+    # add
+    lib_sorter.manipulate_playlist(
+        "rock", add_list, "add", test_table, tmp_pl_path, tmp_pl_path
+    )
+    # remove
+    lib_sorter.manipulate_playlist(
+        "rock", "0, 4", "remove", test_table, tmp_pl_path, tmp_pl_path
+    )
+    # remove_from_all
+    lib_sorter.manipulate_playlist(
+        "ALL", "  1", "remove_from_all", test_table, tmp_pl_path, tmp_pl_path
+    )
+    # rename
+    lib_sorter.manipulate_playlist(
+        "test_list", "", "rename", test_table, tmp_pl_path, tmp_pl_path, "funky"
     )
     yd_exp = lib_sorter.read_playlists(expected_pl_path)
     yd_act = lib_sorter.read_playlists(tmp_pl_path)

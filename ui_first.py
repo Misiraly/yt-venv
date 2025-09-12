@@ -198,6 +198,7 @@ def player_loop(
         Indicates if the media was watched.
     """
     bar = ProgressBar(v_duration, media, v_title, isplaylist)
+    media.get_instance()
     media.play()
     key = v.value
     watched = False
@@ -297,19 +298,20 @@ class BaseInterface:
     None
     """
 
+    page_width = cv.SCR_L
+    wspace = " "
+    ell = "..."
+    playlist = []
     page = {
         "header": ["\n"] + formatter.abc_rower("    PYTHON MUSIC") + ["\n"],
         "body": [],
         "prompt": ["[>] URL or song Number [>]: "],
         "closer": [
-            "\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***",
-            "-" * cv.SCR_L + "\n",
+            "\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***\n".replace(" ", "_").center(
+                page_width
+            ),
         ],
     }
-    page_width = cv.SCR_L
-    wspace = " "
-    ell = "..."
-    playlist = []
 
     def __init__(self):
         self.table = ls.pull_csv_as_df()
