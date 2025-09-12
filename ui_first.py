@@ -307,7 +307,7 @@ class BaseInterface:
         "body": [],
         "prompt": ["[>] URL or song Number [>]: "],
         "closer": [
-            "\n***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***\n".replace(" ", "_").center(
+            "***     ..bideo.. emth!!!~` щ(`Д´щ;)    ***".replace(" ", "_").center(
                 page_width
             ),
         ],

@@ -148,7 +148,7 @@ def playExisting(bu):
 
 def remove_temporary_file():
     for filename in os.listdir(LIBRARY):
-        if filename.startswith(f"{cv.TEMPORARY}.{EXT}"):
+        if filename.startswith(f"{cv.TEMPORARY}.{EXT}") or ".ogg.part" in filename:
             file_path = os.path.join(LIBRARY, filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
