@@ -146,12 +146,22 @@ def playExisting(bu):
     return MediaPlayer(path), song
 
 
+def remove_temporary_file():
+    for filename in os.listdir(LIBRARY):
+        if filename.startswith(f"{cv.TEMPORARY}.{EXT}"):
+            file_path = os.path.join(LIBRARY, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+                print(f"Removed: {file_path}")
+
+
 def tryDownloadFiveTimes(ydl_opts, videos, path):
     full_list = [(video, 0) for video in videos]
     retry = []
     problematics = []
     uids = []
     failed = []
+    timeline = []
     while full_list:
         with YoutubeDL(ydl_opts) as ydl:
             for idx, element in enumerate(full_list, start=1):
@@ -177,13 +187,16 @@ def tryDownloadFiveTimes(ydl_opts, videos, path):
                     os.rename(path, n_path)
                     print(f"File saved to {n_path}")
                 except DownloadError:
+                    remove_temporary_file()
                     trial = (element[0], element[1] + 1)
+                    timeline.append(trial)
                     if trial[1] < 5:
                         retry.append(trial)
                     else:
                         failed.append(video.get("title", "N/A"))
         full_list = retry
         retry = []
+        timeline.append(('',999))
     print("Failed to download these songs after 5 attempts: ")
     for el in failed:
         print(el)
@@ -284,6 +297,7 @@ def play_playlist(playlist, bu, info):
         try:
             breaker = play_add_Song(bu, isplaylist=True)
         except DownloadError:
+            remove_temporary_file()
             print(f"\ncant play this fucking song: {title}!")
             print("Error in the pleilist... going further!!...")
             continue
@@ -307,6 +321,7 @@ def autist_shuffle(song_no, bu):
         try:
             breaker = play_add_Song(bu, isplaylist=True)
         except DownloadError:
+            remove_temporary_file()
             print(f"\ncant play this fucking song: {title}!")
             print("Error in the autist pleilist... !!...")
             tries += 1
@@ -696,6 +711,7 @@ def decision_tree(bu, cmd_input):
             else:
                 init_player(bu, cmd_input)
         except DownloadError:
+            remove_temporary_file()
             print(f"cent lpay this: {bu.song['title']}... fuuuuU!")
             print("\nGoing further down the road...")
             return None

@@ -1,4 +1,5 @@
 # TODO
+  - bulk delete songs
   - ability to skip back and forth between songs ( ►►| and |◄◄)
   - suppress stupid vlc media logs
   - create a better decision tree. Since decisions are executed on a graph, 
