@@ -189,14 +189,14 @@ def tryDownloadFiveTimes(ydl_opts, videos, path):
                 except DownloadError:
                     remove_temporary_file()
                     trial = (element[0], element[1] + 1)
-                    timeline.append(trial)
+                    timeline.append(video.get("title", "N/A"))
                     if trial[1] < 5:
                         retry.append(trial)
                     else:
                         failed.append(video.get("title", "N/A"))
         full_list = retry
         retry = []
-        timeline.append(('',999))
+        timeline.append(" --- ")
     print("Failed to download these songs after 5 attempts: ")
     for el in failed:
         print(el)
@@ -676,8 +676,6 @@ def decision_tree(bu, cmd_input):
         correct_title(bu)
     elif cmd_input == "rename title":
         rename_title(bu)
-    elif cmd_input == "redownload":
-        redownload_song(bu)
     elif cmd_input == "tab":
         bu.show_article()
     elif cmd_input == "date":
@@ -696,6 +694,8 @@ def decision_tree(bu, cmd_input):
                 replay(bu=bu)
             elif cmd_input == "single":
                 single_play(bu)
+            elif cmd_input == "redownload":
+                redownload_song(bu)
             elif cmd_input == "random":
                 to_pass = play_random(bu=bu)
             elif cmd_input == "random --force":
