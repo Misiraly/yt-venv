@@ -40,19 +40,19 @@ REPLACE_CHAR = {
 def qsp(tosort, leq):
     """Partition the list into elements less than or equal to the pivot and elements greater than the pivot."""
     pivot = tosort[-1]
-    l = [el for el in tosort[:-1] if leq(el[1], pivot[1])]
-    r = [el for el in tosort if not leq(el[1], pivot[1])]
-    return l, [pivot], r
+    left = [el for el in tosort[:-1] if leq(el[1], pivot[1])]
+    right = [el for el in tosort if not leq(el[1], pivot[1])]
+    return left, [pivot], right
 
 
 def qs_eng(tosort, leq):
     """Recursively sort the list using quicksort algorithm."""
     if len(tosort) <= 1:
         return tosort
-    l, pivot, r = qsp(tosort, leq)
-    l = qs_eng(l, leq)
-    r = qs_eng(r, leq)
-    return l + pivot + r
+    left, pivot, right = qsp(tosort, leq)
+    left = qs_eng(left, leq)
+    right = qs_eng(right, leq)
+    return left + pivot + right
 
 
 def qs_df(df, col, leq, cutoff=5) -> pd.DataFrame:
@@ -68,8 +68,8 @@ def qs_df(df, col, leq, cutoff=5) -> pd.DataFrame:
 
 def abc_leq(list_1, list_2) -> bool:  # == (list_1 <= list_2)
     """Check if list_1 is less than or equal to list_2 lexicographically."""
-    l = min(len(list_1), len(list_2))
-    for i in range(l):
+    least = min(len(list_1), len(list_2))
+    for i in range(least):
         if list_1[i] == list_2[i]:
             continue
         return list_1[i] < list_2[i]

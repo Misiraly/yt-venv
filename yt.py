@@ -120,7 +120,7 @@ def playExisting(bu):
     extract = song["duration"] == cv.NO_DURATION
     download = not os.path.exists(song["path"])
     if download:
-        print(f"Did not find file at: {song['path']} for song {song["title"]}")
+        print(f"Did not find file at: {song['path']} for song {song['title']}")
         title_for_path = ls.correct_title(song["title"])
         title_for_path = title_string_sense(title_for_path, check_path=True)
         path = f"{LIBRARY}/{title_for_path}.{EXT}"
@@ -391,7 +391,7 @@ def play_random(bu):
             continue
         if playit in YES_CHARS:
             playit = str(songs.index[0])
-            print(f"\nPlaying a random song... [{songs.iloc[0]["title"]}]\n")
+            print(f"\nPlaying a random song... [{songs.iloc[0]['title']}]\n")
         break
     return playit
 
@@ -460,10 +460,9 @@ def playlist_loop(bu):
             cur_playlist = yd[name]
         else:
             print("\nNo such playlist.")
-        if is_command in ["create", "delete", "add", "remove"]:
-            info = is_command + " with" if is_command == "create" else is_command
+        if is_command in ["delete", "add", "remove"]:
             if is_command != "delete":
-                to_add = input(f"Song indices to {info}> ")
+                to_add = input(f"Song indices to {is_command}> ")
             new_name = None
             if is_command == "rename":
                 new_name = input(f"New name for the playlist `{name}` > ")
@@ -471,7 +470,12 @@ def playlist_loop(bu):
                 print("Aborting operation.")
                 continue
             ls.manipulate_playlist(name, to_add, is_command, new_name=new_name)
-            cur_playlist = []
+        elif is_command in ["create"]:
+            to_add = input(f"Song indices to create with> ")
+            if not_sure():
+                print("Aborting operation.")
+                continue
+            ls.manipulate_playlist(key, to_add, is_command)
         elif cur_playlist:
             df = ls.retrieve_single_pl(cur_playlist)
             if is_command == "show":
@@ -719,6 +723,7 @@ def decision_tree(bu, cmd_input):
 
 
 def core() -> None:
+    """Main loop to handle user input and commands."""
     bu = ui_first.BaseInterface()
     bu.show_article()
     cmd_input = None
@@ -727,7 +732,6 @@ def core() -> None:
 
 
 def main() -> None:
-    """Main loop to handle user input and commands."""
     if len(sys.argv) > 1:
         try:
             core()
