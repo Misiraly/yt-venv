@@ -1,12 +1,11 @@
 # TODO
+  - standardized way of inputting commands, linearly additive commands
   - bulk delete songs
   - ability to skip back and forth between songs ( ►►| and |◄◄)
-  - suppress stupid vlc media logs
   - create a better decision tree. Since decisions are executed on a graph, 
   maybe a decision matrix could be in order. Decisions now go several layer
   deep, it's getting scary
   - switch pandas to polars
-  - add tests
   - force search: play the song closest to search value
   - implement better GUI -- maybe with curses... it may be necessary to be able
   to govern a whole screen, not just the last line of the cmd
@@ -23,6 +22,9 @@
   - store metadata after closing: last song played, at what timestamp it was
   left off etc
 
+# IN PROGRESS
+  - add tests
+
 # Partially DONE
   - add "popularity" counter: # of times songs has been listened to 
     (- maybe weighed by time? or slated by periods (weeks, months, year...))
@@ -30,6 +32,7 @@
     (- maybe tab that slates through periods as well)
 
 # DONE
+  - suppress stupid vlc media logs
   - song deletion should also delete from playlists
   - add playlist: creates a playlist from numbers provided
   - search playlist: shows existing playlists

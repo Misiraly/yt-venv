@@ -2,9 +2,7 @@ import os
 import sys
 
 import numpy as np
-
-os.environ["VLC_VERBOSE"] = "-1"
-from vlc import MediaPlayer
+from vlc import Instance
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
@@ -19,6 +17,12 @@ YES_CHARS = {"y", "Y"}
 NAY_CHARS = {"n", "N"}
 LIBRARY = "library"
 EXT = "ogg"
+
+
+def get_media(*args):
+    instance = Instance("--quiet", "--no-xlib")
+    media = instance.media_player_new(*args)
+    return media
 
 
 def _root_prompt(prompt: str) -> str:
@@ -38,8 +42,8 @@ def article_decorator(func):
 
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
-        kwargs["bu"].show_article()
         kwargs["bu"].print_closer()
+        kwargs["bu"].show_article()
 
     return wrapper
 
@@ -110,7 +114,7 @@ def playTheSong(url: str):
     }
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=False)
-    media = MediaPlayer(song_info["url"], ":no-video")
+    media = get_media(song_info["url"])  # , ":no-video")
     return song_info, media
 
 
@@ -143,7 +147,7 @@ def playExisting(bu):
             song["duration"] = song_info["duration"]
             ls.add_attribute(song["title"], song["duration"], "duration")
     bu.song = song
-    return MediaPlayer(path), song
+    return get_media(path), song
 
 
 def remove_temporary_file():
@@ -262,7 +266,7 @@ def playNonExistent(url: str):
     ls.song_to_table_csv(song)
     os.rename(path, n_path)
     print(f"File saved to {n_path}")
-    return MediaPlayer(n_path), song
+    return get_media(n_path), song
 
 
 def play_add_Song(bu, isplaylist=False):
@@ -733,6 +737,7 @@ def core() -> None:
 
 def main() -> None:
     if len(sys.argv) > 1:
+        # when running from .bat, we still want to see some error message
         try:
             core()
         except Exception as e:

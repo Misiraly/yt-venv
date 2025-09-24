@@ -127,37 +127,6 @@ def generate_uid(title, url, path):
     return hashlib.sha1(base.encode()).hexdigest()[: cv.UID_LENGTH]
 
 
-def write_table_to_csv(title_in: str, url: str, duration: int) -> None:
-    """Write a new song into the library and save the library sorted by titles.
-
-    Parameters
-    ----------
-    title_in : str
-        Title of the song.
-    url : str
-        URL of the song.
-    duration : int
-        Duration of the song in seconds.
-    """
-    df = pull_csv_as_df()
-    if title_in not in df["title"].values:
-        # TODO: do not use a list but a safer dictionary, so if column doesn't exist, it wont throw a hissy fit
-        df.loc[len(df.index)] = [
-            title_in,
-            url,
-            duration,
-            str(datetime.now()),
-            0,
-            cv.NO_PATH,
-        ]
-        # sort_values sorts all capital letters before lowercase letters...
-        # we do not want this.
-        out_df = df.sort_values(
-            by=["title"], key=lambda col: col.str.lower(), ignore_index=True
-        )
-        out_df.to_csv(MUSIC_TABLE)
-
-
 def is_path_occupied(path: str) -> bool:
     """Check if a given path is occupied in the library.
 
@@ -173,6 +142,14 @@ def is_path_occupied(path: str) -> bool:
     """
     df = pull_csv_as_df()
     return path in df["path"].values
+
+
+def save_table(df, out_path):
+    """Save csv always reordered after writing into it."""
+    out_df = df.sort_values(
+        by=["title"], key=lambda col: col.str.lower(), ignore_index=True
+    )
+    out_df.to_csv(out_path)
 
 
 def song_to_table_csv(song) -> None:
@@ -193,10 +170,7 @@ def song_to_table_csv(song) -> None:
         df.loc[len(df.index)] = song
         # sort_values sorts all capital letters before lowercase letters...
         # we do not want this.
-        out_df = df.sort_values(
-            by=["title"], key=lambda col: col.str.lower(), ignore_index=True
-        )
-        out_df.to_csv(MUSIC_TABLE)
+        save_table(df, MUSIC_TABLE)
         return song["uid"]
 
 
@@ -228,7 +202,7 @@ def del_from_csv(row_index: int) -> None:
     print(f"Deleting index {row_index} from music table.")
     df = pull_csv_as_df()
     new_df = df.drop([row_index]).reset_index(drop=True)
-    new_df.to_csv(MUSIC_TABLE)
+    save_table(new_df, MUSIC_TABLE)
 
 
 def increase_watched(title: str) -> None:
@@ -258,7 +232,7 @@ def add_attribute(title: str, attribute: str, attribute_col: str) -> None:
     """
     df = pull_csv_as_df()
     df.loc[df["title"] == title, attribute_col] = attribute
-    df.to_csv(MUSIC_TABLE)
+    save_table(df, MUSIC_TABLE)
 
 
 def fill_attributes(song, cols, values) -> None:
@@ -276,4 +250,4 @@ def fill_attributes(song, cols, values) -> None:
     df = pull_csv_as_df()
     for col, val in zip(cols, values):
         df.loc[df["title"] == song["title"], col] = val
-    df.to_csv(MUSIC_TABLE)
+    save_table(df, MUSIC_TABLE)
