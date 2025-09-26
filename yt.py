@@ -25,6 +25,18 @@ def get_media(*args):
     return media
 
 
+def get_ydl_opts(path):
+    """Return YoutubeDL options"""
+    ydl_opts = {
+        "extract_audio": True,
+        "format": "bestaudio",
+        "no_check_certificate": True,
+        "outtmpl": path,
+        "abort_on_unavailable_fragments": True,
+    }
+    return ydl_opts
+
+
 def _root_prompt(prompt: str) -> str:
     """Prompt the user for input and handle exit conditions."""
     cmd_input = input(prompt)
@@ -59,7 +71,7 @@ def divide_decorator(func):
     return wrapper
 
 
-def title_warning(msg, new_name, old_title):
+def title_warning(msg, new_name, old_title) -> None:
     print(f"\nWarning! {msg}")
     print("old name:", old_title)
     print("new name:", new_name)
@@ -93,13 +105,7 @@ def title_string_sense(title: str, check_path: bool) -> str:
     if new_name == "":
         title_warning("The title string is EMPTY!", new_name, title)
         new_name = input(filename_prompt)
-    print(
-        "-",
-        new_name,
-        "-",
-        title,
-        "-",
-    )
+    print("-", new_name, "-", title, "-")
     if new_name == title:
         return new_name
     return title_string_sense(new_name, check_path)
@@ -130,22 +136,17 @@ def playExisting(bu):
         path = f"{LIBRARY}/{title_for_path}.{EXT}"
     else:
         path = song["path"]
-    ydl_opts = {
-        "extract_audio": True,
-        "format": "bestaudio",
-        "no_check_certificate": True,
-        "outtmpl": path,
-        "abort_on_unavailable_fragments": True,
-    }
+    ydl_opts = get_ydl_opts(path)
     if extract or download:
+        uid = song["uid"]
         with YoutubeDL(ydl_opts) as ydl:
             song_info = ydl.extract_info(song["url"], download)
             if download:
                 song["path"] = path
-                ls.add_attribute(song["title"], path, "path")
+                ls.change_attribute(uid, "path", path)
         if extract:
             song["duration"] = song_info["duration"]
-            ls.add_attribute(song["title"], song["duration"], "duration")
+            ls.change_attribute(uid, "duration", song["duration"])
     bu.song = song
     return get_media(path), song
 
@@ -165,7 +166,6 @@ def tryDownloadFiveTimes(ydl_opts, videos, path):
     problematics = []
     uids = []
     failed = []
-    timeline = []
     while full_list:
         with YoutubeDL(ydl_opts) as ydl:
             for idx, element in enumerate(full_list, start=1):
@@ -193,17 +193,16 @@ def tryDownloadFiveTimes(ydl_opts, videos, path):
                 except DownloadError:
                     remove_temporary_file()
                     trial = (element[0], element[1] + 1)
-                    timeline.append(video.get("title", "N/A"))
                     if trial[1] < 5:
                         retry.append(trial)
                     else:
                         failed.append(video.get("title", "N/A"))
         full_list = retry
         retry = []
-        timeline.append(" --- ")
-    print("Failed to download these songs after 5 attempts: ")
-    for el in failed:
-        print(el)
+    if failed:
+        print("Failed to download these songs after 5 attempts: ")
+        for el in failed:
+            print(el)
     print()
     return problematics, uids
 
@@ -223,13 +222,7 @@ def downloadPlaylist(playlist_url: str):
     print(f"Attempting to download {playlist_name}")
 
     path = f"{LIBRARY}/{cv.TEMPORARY}.{EXT}"
-    ydl_opts = {
-        "extract_audio": True,
-        "format": "bestaudio",
-        "no_check_certificate": True,
-        "outtmpl": path,
-        "abort_on_unavailable_fragments": True,
-    }
+    ydl_opts = get_ydl_opts(path)
     problematics, uids = tryDownloadFiveTimes(ydl_opts, videos, path)
     if problematics:
         print(
@@ -245,13 +238,7 @@ def playNonExistent(url: str):
     """Play a song that is not in the library."""
     song = {}
     path = f"{LIBRARY}/{cv.TEMPORARY}.{EXT}"
-    ydl_opts = {
-        "extract_audio": True,
-        "format": "bestaudio",
-        "no_check_certificate": True,
-        "outtmpl": path,
-        "abort_on_unavailable_fragments": True,
-    }
+    ydl_opts = get_ydl_opts(path)
     with YoutubeDL(ydl_opts) as ydl:
         song_info = ydl.extract_info(url, download=True)
     title_for_path = ls.correct_title(song_info["title"])
@@ -274,7 +261,7 @@ def play_add_Song(bu, isplaylist=False):
     media, song = playExisting(bu)
     post_vars = ui_first.cli_gui(song["title"], song["duration"], media, isplaylist)
     if post_vars["watched"]:
-        ls.increase_watched(song["title"])
+        ls.increase_watched(song["uid"])
     return post_vars["breaker"]
 
 
@@ -290,56 +277,50 @@ def play_on_list(bu, cmd_input):
         bu.show_article()
 
 
+def playlist_core(bu, title, err_msg):
+    """Play 1 song on playlist."""
+    for _ in range(3):
+        try:
+            breaker = play_add_Song(bu, isplaylist=True)
+            bu.print_closer()
+            return breaker
+        except DownloadError:
+            remove_temporary_file()
+            print(f"\ncant play this fucking song: {title}!")
+            print(err_msg)
+    print("song gives error 3 times, it's over".center(cv.SCR_L, "*"))
+    return ""
+
+
 def play_playlist(playlist, bu, info):
     """Play a playlist of songs."""
     print(info.center(cv.SCR_L, "-"))
+    err_msg = "We salute the pleilist: " + info
     for el in playlist:
         bu.song = bu.table.iloc[el].copy(deep=True)
         title = bu.song["title"]
         print(f"[nepst: {title.lower()}]".center(cv.SCR_L))
-        # have to handle it here otherwise the playlist breaks
-        try:
-            breaker = play_add_Song(bu, isplaylist=True)
-        except DownloadError:
-            remove_temporary_file()
-            print(f"\ncant play this fucking song: {title}!")
-            print("Error in the pleilist... going further!!...")
-            continue
-        bu.print_closer()
+        breaker = playlist_core(bu, title, err_msg)
         if breaker == "x":
             break
     print("\nthe pleilist... it is so over...\n")
     bu.show_article()
 
 
-# TODO: ALMOS SAME AS ABOVE!
 def autist_shuffle(song_no, bu):
     """Play a song repeatedly until the user exits."""
     print("AUTIST SHUFFLE".center(cv.SCR_L, "-"))
+    err_msg = "Error in the autist pleilist... !!..."
     bu.song = bu.table.iloc[song_no].copy(deep=True)
     title = bu.song["title"]
     print(f"[run: {title.lower()}]")
-    tries = 0
-    while True:
-        # have to handle it here otherwise the playlist breaks
-        try:
-            breaker = play_add_Song(bu, isplaylist=True)
-        except DownloadError:
-            remove_temporary_file()
-            print(f"\ncant play this fucking song: {title}!")
-            print("Error in the autist pleilist... !!...")
-            tries += 1
-            if tries > 2:
-                print("song gives error 3 times, it's over".center(cv.SCR_L, "*"))
-                break
-            continue
-        bu.print_closer()
-        if breaker == "x":
-            break
+    breaker = ""
+    while breaker != "x":
+        breaker = playlist_core(bu, title, err_msg)
     print("\nwestphalen... its over...\n")
 
 
-def play_new(bu, cmd_input):
+def play_new(bu, cmd_input) -> None:
     """Play a song not yet tracked by our library."""
     if "https" not in cmd_input:
         search_table(cmd_input)
@@ -356,7 +337,7 @@ def play_new(bu, cmd_input):
             song["title"], song["duration"], media, isplaylist=False
         )
         if post_vars["watched"]:
-            ls.increase_watched(song["title"])
+            ls.increase_watched(song["uid"])
         bu.song = song
         bu.print_closer()
         bu.show_article()
@@ -433,7 +414,7 @@ def play_autist(bu, cmd_input):
 
 
 def play_manual_playlist(bu, cmd_input):
-    playlist = ls.clean_playlist_input(cmd_input)
+    playlist = ls.clean_playlist_input(cmd_input, bu.table.index.values)
     play_playlist(playlist, bu, "MY PLAYLIST. FUCK OFF WE ARE FULL.")
 
 
@@ -554,7 +535,7 @@ def redownload_song(bu):
         print(f"[ERROR] index ({row_index}) out of bounds.")
         return
     song = dict(df.iloc[row_index])
-    title = song["title"]
+    uid, title = song["uid"], song["title"]
     print("! Are you sure to re-download the song: ")
     print(f"! > {title}")
     make_sure = _root_prompt("? [y/N]: ")
@@ -567,7 +548,7 @@ def redownload_song(bu):
         song["path"] = cv.NO_PATH
     print(f"[INFO] attempting to re-download song: {title}")
     bu.song = song
-    ls.add_attribute(song["title"], cv.NO_PATH, "path")
+    ls.change_attribute(uid, "path", cv.NO_PATH)
     playExisting(bu)
 
 
@@ -612,7 +593,7 @@ def correct_title(bu):
             title = title_string_sense(
                 ls.correct_title(song["title"]), check_path=False
             )
-            ls.add_attribute(song["title"], title, "title")
+            ls.change_attribute(song["uid"], "title", title)
             bu.show_article()
 
 
@@ -633,7 +614,7 @@ def rename_title(bu):
             song = bu.table.iloc[cmd_num].copy(deep=True)
             new_title = _root_prompt("New title >")
             new_title = title_string_sense(new_title, check_path=False)
-            ls.add_attribute(song["title"], new_title, "title")
+            ls.change_attribute(song["uid"], "title", new_title)
             bu.show_article()
     else:
         print("Not an integer, renaming aborted.")
@@ -741,10 +722,10 @@ def main() -> None:
         try:
             core()
         except Exception as e:
-            print("~ " * 40)
+            print("-." * 40)
             print(sys.argv[1])
             print(e)
-            input("\n\nif you do anything this will close...")
+            input("\nif you do anything this will close...")
     else:
         core()
 

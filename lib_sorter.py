@@ -13,6 +13,12 @@ PLAYLISTS = "data/playlists.yaml"
 # should have format as in "data/test-table.csv"
 
 
+def pull_csv_as_df(table_path=MUSIC_TABLE) -> pd.DataFrame:
+    """Pull the music library from a CSV file into a DataFrame."""
+    df = pd.read_csv(table_path, index_col=[0])
+    return df
+
+
 def create_playlist_file(pl_path=PLAYLISTS):
     yd = {}
     with open(pl_path, "w") as file:
@@ -116,12 +122,6 @@ def retrieve_single_pl(cur_playlist) -> pd.DataFrame:
     return ndf
 
 
-def pull_csv_as_df(table_path=MUSIC_TABLE) -> pd.DataFrame:
-    """Pull the music library from a CSV file into a DataFrame."""
-    df = pd.read_csv(table_path, index_col=[0])
-    return df
-
-
 def generate_uid(title, url, path):
     base = f"{title}-{url}-{path}"
     return hashlib.sha1(base.encode()).hexdigest()[: cv.UID_LENGTH]
@@ -144,15 +144,15 @@ def is_path_occupied(path: str) -> bool:
     return path in df["path"].values
 
 
-def save_table(df, out_path):
+def save_table(df, table_path):
     """Save csv always reordered after writing into it."""
     out_df = df.sort_values(
         by=["title"], key=lambda col: col.str.lower(), ignore_index=True
     )
-    out_df.to_csv(out_path)
+    out_df.to_csv(table_path)
 
 
-def song_to_table_csv(song) -> None:
+def song_to_table_csv(song, table_in=MUSIC_TABLE, table_out=MUSIC_TABLE) -> str:
     """Write a new song into the library and save the library sorted by titles.
 
     Parameters
@@ -160,7 +160,7 @@ def song_to_table_csv(song) -> None:
     song : dict
         Dictionary containing song attributes.
     """
-    df = pull_csv_as_df()
+    df = pull_csv_as_df(table_in)
     if song["title"] not in df["title"].values:
         if "add_date" not in song:
             song["add_date"] = str(datetime.now())
@@ -170,7 +170,7 @@ def song_to_table_csv(song) -> None:
         df.loc[len(df.index)] = song
         # sort_values sorts all capital letters before lowercase letters...
         # we do not want this.
-        save_table(df, MUSIC_TABLE)
+        save_table(df, table_out)
         return song["uid"]
 
 
@@ -191,7 +191,7 @@ def correct_title(title_in: str) -> str:
     return title
 
 
-def del_from_csv(row_index: int) -> None:
+def del_from_csv(row_index: int, table_in=MUSIC_TABLE, table_out=MUSIC_TABLE) -> None:
     """Remove a row from the library given the row index.
 
     Parameters
@@ -200,12 +200,12 @@ def del_from_csv(row_index: int) -> None:
         Index of the row to remove.
     """
     print(f"Deleting index {row_index} from music table.")
-    df = pull_csv_as_df()
+    df = pull_csv_as_df(table_in)
     new_df = df.drop([row_index]).reset_index(drop=True)
-    save_table(new_df, MUSIC_TABLE)
+    save_table(new_df, table_out)
 
 
-def increase_watched(title: str) -> None:
+def increase_watched(uid: str, table_in=MUSIC_TABLE, table_out=MUSIC_TABLE) -> None:
     """Increase the watched count of a given song.
 
     Parameters
@@ -213,12 +213,18 @@ def increase_watched(title: str) -> None:
     title : str
         Title of the song.
     """
-    df = pull_csv_as_df()
-    df.loc[df["title"] == title, "watched"] += 1
-    df.to_csv(MUSIC_TABLE)
+    df = pull_csv_as_df(table_in)
+    df.loc[df["uid"] == uid, "watched"] += 1
+    df.to_csv(table_out)
 
 
-def add_attribute(title: str, attribute: str, attribute_col: str) -> None:
+def change_attribute(
+    uid: str,
+    attribute_col: str,
+    attribute: str,
+    table_in=MUSIC_TABLE,
+    table_out=MUSIC_TABLE,
+) -> None:
     """Add an attribute to a song in the library.
 
     Parameters
@@ -230,24 +236,6 @@ def add_attribute(title: str, attribute: str, attribute_col: str) -> None:
     attribute_col : str
         Column name of the attribute.
     """
-    df = pull_csv_as_df()
-    df.loc[df["title"] == title, attribute_col] = attribute
-    save_table(df, MUSIC_TABLE)
-
-
-def fill_attributes(song, cols, values) -> None:
-    """Fill multiple attributes for a song in the library.
-
-    Parameters
-    ----------
-    song : dict
-        Dictionary containing song attributes.
-    cols : list
-        List of column names to update.
-    values : list
-        List of values to update in the corresponding columns.
-    """
-    df = pull_csv_as_df()
-    for col, val in zip(cols, values):
-        df.loc[df["title"] == song["title"], col] = val
-    save_table(df, MUSIC_TABLE)
+    df = pull_csv_as_df(table_in)
+    df.loc[df["uid"] == uid, attribute_col] = attribute
+    save_table(df, table_out)

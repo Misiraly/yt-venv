@@ -5,9 +5,13 @@ import pytest
 import lib_sorter
 
 FIXTURES = Path("tests/test_lib_sorter/fixtures")
+EXPECTED = FIXTURES / "expected_output"
+INPUTS = FIXTURES / "inputs"
 EMPTY = "empty_pl_file.yaml"
-empty_pl_file = f"tests/test_lib_sorter/fixtures/expected_output/{EMPTY}"
-test_table = "data/test-table.csv"
+empty_pl_file = EXPECTED / EMPTY
+TABLE_NAME = "test-table.csv"
+test_table = Path("data") / TABLE_NAME
+expected_table = EXPECTED / TABLE_NAME
 
 
 def test_pl_file_creation(tmpdir):
@@ -29,7 +33,7 @@ def test_uid_validation():
 
 def test_playlist_manipulation(tmpdir):
     pl_file_name = "playlists.yaml"
-    input_pl_path = FIXTURES / "inputs" / pl_file_name
+    input_pl_path = INPUTS / pl_file_name
     expected_pl_path = FIXTURES / "expected_output" / pl_file_name
     tmp_pl_path = tmpdir / pl_file_name
     add_list = "6,1,11332, 4,, 32, 3,,, ,  ,apple, 39,00, 00,pear, 12"
@@ -60,3 +64,33 @@ def test_playlist_manipulation(tmpdir):
     yd_exp = lib_sorter.read_playlists(expected_pl_path)
     yd_act = lib_sorter.read_playlists(tmp_pl_path)
     assert yd_exp == yd_act
+
+
+def _read_raw_csv(file_p):
+    with open(file_p) as file:
+        raw = file.read()
+    return raw
+
+
+def test_table_manipulation(tmpdir):
+    new_song = {
+        "uid": "a2c978fb53238e56",
+        "title": "Billy Joel - The River of Dreams (Official Video)",
+        "url": "https://www.youtube.com/watch?v=hSq4B_zHqPM",
+        "duration": 250,
+        "add_date": "'45163.4141164005'",
+        "path": "No Path",
+    }
+    table_out = tmpdir / TABLE_NAME
+    lib_sorter.song_to_table_csv(new_song, table_in=test_table, table_out=table_out)
+    lib_sorter.del_from_csv(7, table_in=table_out, table_out=table_out)
+    lib_sorter.increase_watched(
+        "495dfa5d930cb050", table_in=table_out, table_out=table_out
+    )
+    f_path = "library/Aot Ending 4  Requiem der Morgenrte  Linked Horizon.ogg"
+    lib_sorter.change_attribute(
+        "6c3b53d15740656a", "path", f_path, table_in=table_out, table_out=table_out
+    )
+    raw_csv_exp = _read_raw_csv(expected_table)
+    raw_csv_act = _read_raw_csv(table_out)
+    assert raw_csv_exp == raw_csv_act

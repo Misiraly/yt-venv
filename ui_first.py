@@ -273,9 +273,7 @@ def cli_gui(v_title: str, v_duration: int, media, isplaylist: bool) -> dict:
     p_check_end = Process(target=check_end, args=(v_duration, v, t_v))
     p_ask.start()
     p_check_end.start()
-    post_vars["watched"] = player_loop(
-        media, v_title, v_duration, isplaylist, v, t_v
-    )  # TODO: media.play() is hidden inside this func, but media.stop() is outside!
+    post_vars["watched"] = player_loop(media, v_title, v_duration, isplaylist, v, t_v)
     p_ask.terminate()
     p_check_end.terminate()
     p_ask.join()

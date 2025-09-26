@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 from Levenshtein import distance as lev
 
@@ -22,6 +24,7 @@ SEP_CHAR = {
     ">",
     "*",
     "~",
+    "|",
 }
 IGNORE_CHAR = {"'", '"', "”", "/", "\\", "#", "$", "%", "&", "@", "^"}
 REPLACE_CHAR = {
@@ -84,14 +87,14 @@ def tokenize_neighbor(streeng: str):
     -->
     ["what","are","you","doing","whatare","areyou","youdoing"]
     """
-    string = streeng.lower()
+    pr_string = streeng.lower()
     for char in SEP_CHAR:
-        string = string.replace(char, " ")
+        pr_string = pr_string.replace(char, " ")
     for char in IGNORE_CHAR:
-        string = string.replace(char, "")
+        pr_string = pr_string.replace(char, "")
     for char, replacement in REPLACE_CHAR.items():
-        string = string.replace(char, replacement)
-    tokens = string.split()
+        pr_string = pr_string.replace(char, replacement)
+    tokens = pr_string.split()
     tokens = [token for token in tokens if token != ""]
     neigh_tokens = [tokens[i] + tokens[i + 1] for i in range(len(tokens) - 1)]
     return tokens + neigh_tokens
