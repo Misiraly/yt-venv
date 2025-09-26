@@ -25,8 +25,10 @@ SEP_CHAR = {
     "*",
     "~",
     "|",
+    "=",
+    "_",
 }
-IGNORE_CHAR = {"'", '"', "”", "/", "\\", "#", "$", "%", "&", "@", "^"}
+IGNORE_CHAR = {"'", '"', "”", "/", "\\", "#", "$", "%", "&", "@", "^", "`"}
 REPLACE_CHAR = {
     "á": "a",
     "é": "e",
@@ -88,10 +90,8 @@ def tokenize_neighbor(streeng: str):
     ["what","are","you","doing","whatare","areyou","youdoing"]
     """
     pr_string = streeng.lower()
-    for char in SEP_CHAR:
-        pr_string = pr_string.replace(char, " ")
-    for char in IGNORE_CHAR:
-        pr_string = pr_string.replace(char, "")
+    pr_string = re.sub(r"[;:\-\+\.\?!,\[\]\(\)\{\}<>\*\~\|=_]", " ", pr_string)
+    pr_string = re.sub(r"[\'\"\”\/\\#\$%&@\^`]", "", pr_string)
     for char, replacement in REPLACE_CHAR.items():
         pr_string = pr_string.replace(char, replacement)
     tokens = pr_string.split()
@@ -116,17 +116,14 @@ def token_distance_list(search_value, text, cutoff=5):
     return distance_list[:cutoff]
 
 
+
+
 def sorted_by_word(
-    s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5
+    s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5, depth: int = 6
 ) -> pd.DataFrame:
     """Sort the DataFrame by Levenshtein distance of tokens from the search word."""
     df = lib.copy(deep=True)
-    df["dis"] = df[col].apply(lambda text: token_distance_list(s_word, text, cutoff))
-    if cutoff > len(df.index):
-        print(
-            f"[WARNING] Cutoff value ({cutoff}) larger than library length,"
-            + "defaulting to 5"
-        )
-        cutoff = 5
-    sdf = qs_df(df, "dis", abc_leq, cutoff=cutoff)
-    return sdf
+    df["dis"] = df[col].apply(lambda text: token_distance_list(s_word, text, depth))
+    sdf = df.sort_values("dis")
+    return sdf[:cutoff]
+

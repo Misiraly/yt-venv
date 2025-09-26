@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 import yaml
 
 from modules import search_text
@@ -10,10 +9,17 @@ EXPECTED = FIXTURES / "expected_output"
 INPUTS = FIXTURES / "inputs"
 
 
-def test_tokenization():
-    with open(INPUTS / "song_names.txt") as file:
+def test_tokenization(tmpdir):
+    # reading the file with utf-8 -- encodings could be problematic
+    with open(INPUTS / "song_names.txt", encoding="utf-8") as file:
         song_names = file.read().split("\n")
-    tokens_act = [search_text.tokenize_neighbor(name) for name in song_names]
-    with open(EXPECTED / "tokens.yaml") as file:
-        tokens_exp = yaml.safe_load(file)
+    tokens = [search_text.tokenize_neighbor(name) for name in song_names]
+    tokens_act_path = tmpdir / "tokens.yaml"
+    tokens_exp_path = EXPECTED / "tokens.yaml"
+    # saving the tokens to make manual check possible
+    with open(tokens_act_path, "w") as file:
+        yaml.safe_dump(tokens, file)
+    with open(tokens_exp_path) as f_exp, open(tokens_act_path) as f_act:
+        tokens_exp = yaml.safe_load(f_exp)
+        tokens_act = yaml.safe_load(f_act)
     assert tokens_act == tokens_exp
