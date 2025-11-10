@@ -639,6 +639,7 @@ def command_help():
     print("  - by_date :: play the songs by date of addition to the list")
     print("  - `,` :: playlist of song numbers divided by a comma, eg `12, 3, 8`")
     print("  - autist :: play the same song over and over again")
+    print("  - --force-restart-update :: exit, update yt-dlp and restart")
     print("  - help :: prints this list")
 
 
@@ -693,6 +694,8 @@ def decision_tree(bu, cmd_input):
                 shuffle(bu)
             elif cmd_input == "by_date":
                 play_from_newest(bu)
+            elif cmd_input == "--force-restart-update":
+                sys.exit(100)
             elif "," in cmd_input:
                 play_manual_playlist(bu, cmd_input)
             elif "autist" in cmd_input[: len("autist")]:

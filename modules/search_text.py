@@ -3,32 +3,6 @@ import re
 import pandas as pd
 from Levenshtein import distance as lev
 
-# from unidecode import unidecode
-
-SEP_CHAR = {
-    ";",
-    ":",
-    "-",
-    "+",
-    ".",
-    "?",
-    "!",
-    ",",
-    "[",
-    "]",
-    "(",
-    ")",
-    "{",
-    "}",
-    "<",
-    ">",
-    "*",
-    "~",
-    "|",
-    "=",
-    "_",
-}
-IGNORE_CHAR = {"'", '"', "”", "/", "\\", "#", "$", "%", "&", "@", "^", "`"}
 REPLACE_CHAR = {
     "á": "a",
     "é": "e",
@@ -40,45 +14,6 @@ REPLACE_CHAR = {
     "ü": "u",
     "ű": "u",
 }
-
-
-def qsp(tosort, leq):
-    """Partition the list into elements less than or equal to the pivot and elements greater than the pivot."""
-    pivot = tosort[-1]
-    left = [el for el in tosort[:-1] if leq(el[1], pivot[1])]
-    right = [el for el in tosort if not leq(el[1], pivot[1])]
-    return left, [pivot], right
-
-
-def qs_eng(tosort, leq):
-    """Recursively sort the list using quicksort algorithm."""
-    if len(tosort) <= 1:
-        return tosort
-    left, pivot, right = qsp(tosort, leq)
-    left = qs_eng(left, leq)
-    right = qs_eng(right, leq)
-    return left + pivot + right
-
-
-def qs_df(df, col, leq, cutoff=5) -> pd.DataFrame:
-    """Apply the quicksort algorithm to a DataFrame by one of its columns."""
-    ilist = df.index.values.tolist()
-    dislist = df[col].values.tolist()
-    tosort = list(zip(ilist, dislist))
-    sortlist = qs_eng(tosort, leq)
-    ilist = [el[0] for el in sortlist[:cutoff]]
-    sdf = df.loc[ilist]
-    return sdf
-
-
-def abc_leq(list_1, list_2) -> bool:  # == (list_1 <= list_2)
-    """Check if list_1 is less than or equal to list_2 lexicographically."""
-    least = min(len(list_1), len(list_2))
-    for i in range(least):
-        if list_1[i] == list_2[i]:
-            continue
-        return list_1[i] < list_2[i]
-    return len(list_1) <= len(list_2)
 
 
 def tokenize_neighbor(streeng: str):
@@ -116,8 +51,6 @@ def token_distance_list(search_value, text, cutoff=5):
     return distance_list[:cutoff]
 
 
-
-
 def sorted_by_word(
     s_word: str, col: str, lib: pd.DataFrame, cutoff: int = 5, depth: int = 6
 ) -> pd.DataFrame:
@@ -126,4 +59,3 @@ def sorted_by_word(
     df["dis"] = df[col].apply(lambda text: token_distance_list(s_word, text, depth))
     sdf = df.sort_values("dis")
     return sdf[:cutoff]
-

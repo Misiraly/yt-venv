@@ -7,14 +7,15 @@ Really not optimised for others to use. But you can give it a try.
  - setup virtual environment as per "requirements.txt"
  - rename the music table "data/test-table.csv" to "data/music_table.csv" to
  start out somewhere. You can personalize it later.
- - somehow make it happen, that you are able to run the `yt.py` script. That is
- the main one. What works for me is to run the script with these cmd line
- commands:  
-    `cd C:\<your path>\yt-venv`  
-    `C:\\Scripts\python.exe C:\<your path>\yt-venv\yt.py`  
+ - run `yt.py`
  - you copy and paste a yt url into the command line, the program should
  download, play and add it to your library. For playlists the same, plus a new
  playlist with the same name will be created.
+
+Example Bat file:
+```
+
+```
 
 Commands to use in the program:
   - ser :: search for song
