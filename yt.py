@@ -329,6 +329,19 @@ def play_new(bu, cmd_input) -> None:
         if not_sure():
             return
         downloadPlaylist(cmd_input)
+    elif "&list=" in cmd_input:
+        print("\n", "[!]".center(cv.SCR_L))
+        print(
+            "This is a url from a playlist. To download it properly, please click".center(
+                cv.SCR_L
+            )
+        )
+        print(
+            "on the playlist name on the right sidebar and copy the consequent url.".center(
+                cv.SCR_L
+            ),
+            "\n",
+        )
     else:
         url = cmd_input
         print(url)
@@ -446,6 +459,7 @@ def playlist_loop(bu):
         else:
             print("\nNo such playlist.")
         if is_command in ["delete", "add", "remove"]:
+            to_add = ""
             if is_command != "delete":
                 to_add = input(f"Song indices to {is_command}> ")
             new_name = None
@@ -707,6 +721,7 @@ def decision_tree(bu, cmd_input):
             print(f"cent lpay this: {bu.song['title']}... fuuuuU!")
             print("\nGoing further down the road...")
             return None
+    remove_temporary_file()
     return to_pass
 
 
