@@ -8,10 +8,12 @@ FIXTURES = Path("tests/test_lib_sorter/fixtures")
 EXPECTED = FIXTURES / "expected_output"
 INPUTS = FIXTURES / "inputs"
 EMPTY = "empty_pl_file.yaml"
-empty_pl_file = EXPECTED / EMPTY
+empty_pl_file = EXPECTED / "create" / EMPTY
 TABLE_NAME = "test-table.csv"
 test_table = Path("data") / TABLE_NAME
-expected_table = EXPECTED / TABLE_NAME
+expected_table = EXPECTED / "table" / TABLE_NAME
+pl_file_name = "playlists.yaml"
+input_pl_path = INPUTS / pl_file_name
 
 
 def test_pl_file_creation(tmpdir):
@@ -32,9 +34,7 @@ def test_uid_validation():
 
 
 def test_playlist_manipulation(tmpdir):
-    pl_file_name = "playlists.yaml"
-    input_pl_path = INPUTS / pl_file_name
-    expected_pl_path = FIXTURES / "expected_output" / pl_file_name
+    expected_pl_path = FIXTURES / "expected_output" / "uids" / pl_file_name
     tmp_pl_path = tmpdir / pl_file_name
     add_list = "6,1,11332, 4,, 32, 3,,, ,  ,apple, 39,00, 00,pear, 12"
     # create, using input yaml to initate playlists file
@@ -64,6 +64,15 @@ def test_playlist_manipulation(tmpdir):
     yd_exp = lib_sorter.read_playlists(expected_pl_path)
     yd_act = lib_sorter.read_playlists(tmp_pl_path)
     assert yd_exp == yd_act
+
+
+# def test_playlist_idx_manipulation(tmpdir):
+#     playlist_name = ...
+#     song_id = ...
+#     playlist_id = ...
+#     option = 'insert'
+#     out_pl_path = tmpdir / pl_file_name
+#     lib_sorter.manipulate_playlist_indeces(song_id, playlist_id, option, input_pl_path, out_pl_path)
 
 
 def _read_raw_csv(file_p):

@@ -18,3 +18,12 @@ UID_LENGTH = 16
 
 # placeholders
 TEMPORARY = "_temporary_file_name_"
+
+# user input commands
+EXIT_CHARS = {"q", "exit"}
+YES_CHARS = {"y", "Y"}
+NAY_CHARS = {"n", "N"}
+
+# file and library paths
+LIBRARY = "library"
+EXT = "ogg"

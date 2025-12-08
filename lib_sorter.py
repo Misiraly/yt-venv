@@ -75,7 +75,7 @@ def manipulate_playlist_uids(
     if option not in {"delete", "rename"}:
         _validate_song_list(uids)
     if option not in {"create", "remove_from_all"} and playlist_name not in yd:
-        print(f"Playlist specified ({playlist_name}) doesn't exist.")
+        print(f"Playlist ({playlist_name}) doesn't exist.")
         return
     if option == "create":
         if playlist_name in yd:
@@ -92,10 +92,36 @@ def manipulate_playlist_uids(
         for key, playlist in yd.items():
             yd[key] = [el for el in playlist if el not in uids]
     elif option == "rename":
+        if new_name is None:
+            print("Error: new_name must be provided when renaming a playlist.")
+            return
+        if new_name in yd:
+            print(f"Playlist by this name ({new_name}) already exists.")
+            return
         yd[new_name] = yd.pop(playlist_name)
+    elif option == "reinsert_index":
+        if len(uids) != 2:
+            print(
+                "Provide exactly 2 indeces (song to take, place to insert) for reorder."
+            )
+            return
+        song_uid = yd[playlist_name].pop(uids[0])
+        yd[playlist_name].insert(uids[1], song_uid)
     else:
         print(f"Action '{option}' not possible for playlist manipulation.")
     write_to_playlist(pl_out, yd)
+
+
+# def manipulate_playlist_indeces(
+#     playlist_name,
+#     song_id,
+#     playlist_id,
+#     option,
+#     pl_path=PLAYLISTS,
+#     pl_out=PLAYLISTS,
+#     new_name=None,):
+#     if option == 'insert':
+#         yd = read_playlists(pl_path)
 
 
 def manipulate_playlist(
@@ -238,4 +264,12 @@ def change_attribute(
     """
     df = pull_csv_as_df(table_in)
     df.loc[df["uid"] == uid, attribute_col] = attribute
+    save_table(df, table_out)
+
+
+def refresh_table(
+    table_in=MUSIC_TABLE,
+    table_out=MUSIC_TABLE,
+) -> None:
+    df = pull_csv_as_df(table_in)
     save_table(df, table_out)

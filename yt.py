@@ -11,12 +11,12 @@ import lib_sorter as ls
 import ui_first
 from modules import search_text as st
 
-# Constants
-EXIT_CHARS = {"q", "exit"}
-YES_CHARS = {"y", "Y"}
-NAY_CHARS = {"n", "N"}
-LIBRARY = "library"
-EXT = "ogg"
+# Use constants from constant_values module
+EXIT_CHARS = cv.EXIT_CHARS
+YES_CHARS = cv.YES_CHARS
+NAY_CHARS = cv.NAY_CHARS
+LIBRARY = cv.LIBRARY
+EXT = cv.EXT
 
 
 def get_media(*args):
@@ -90,25 +90,36 @@ def force_simple_name(title, url) -> str:
 
 
 def title_string_sense(title: str, check_path: bool) -> str:
-    """Check and fix the title if it already exists or is empty."""
-    new_name = title
-    filename_prompt = "New filename to use:"
-    print("checking path...")
-    if check_path and os.path.exists(f"{LIBRARY}/{new_name}.{EXT}"):
-        title_warning("This title already exists!", new_name, title)
-        new_name = input(filename_prompt)
-    if 0 < len(new_name) < cv.TITLE_MIN:
-        title_warning("The title is VERY SHORT!", new_name, title)
-        answer = input("Do you want to rename? [Y/n]: ")
-        if answer not in NAY_CHARS:
-            new_name = input(filename_prompt)
-    if new_name == "":
-        title_warning("The title string is EMPTY!", new_name, title)
-        new_name = input(filename_prompt)
-    print("-", new_name, "-", title, "-")
-    if new_name == title:
-        return new_name
-    return title_string_sense(new_name, check_path)
+    """Validate filename candidate and keep prompting until it is usable."""
+    filename_prompt = "New filename to use: "
+    candidate = ls.correct_title(title)
+
+    while True:
+        if candidate == "":
+            title_warning("The title string is EMPTY!", candidate, title)
+            candidate = ls.correct_title(input(filename_prompt))
+            continue
+
+        if 0 < len(candidate) < cv.TITLE_MIN:
+            title_warning("The title is VERY SHORT!", candidate, title)
+            answer = input("Do you want to rename? [y/N]: ")
+            if answer in YES_CHARS:
+                candidate = ls.correct_title(input(filename_prompt))
+                continue
+
+        if check_path:
+            candidate_path = f"{LIBRARY}/{candidate}.{EXT}"
+            if os.path.exists(candidate_path):
+                warn_msg = (
+                    f"The path respective to the title already exists: {candidate_path}\n"
+                    "Please provide a different filename."
+                )
+                title_warning(warn_msg, candidate, title)
+                candidate = ls.correct_title(input(filename_prompt))
+                continue
+
+        print(f"Filename to use: '{candidate}' (original title: '{title}')")
+        return candidate
 
 
 def playTheSong(url: str):
@@ -130,7 +141,7 @@ def playExisting(bu):
     extract = song["duration"] == cv.NO_DURATION
     download = not os.path.exists(song["path"])
     if download:
-        print(f"Did not find file at: {song['path']} for song {song['title']}")
+        print(f"Did not find file at: `{song['path']}` for song {song['title']}")
         title_for_path = ls.correct_title(song["title"])
         title_for_path = title_string_sense(title_for_path, check_path=True)
         path = f"{LIBRARY}/{title_for_path}.{EXT}"
@@ -663,6 +674,7 @@ def decision_tree(bu, cmd_input):
     Could be implemented with a dict... but it is pretty fast anyway,
     doesn't get executed much.
     """
+    ls.refresh_table()
     if cmd_input is None:
         bu.refresh_article()
         print(
@@ -722,6 +734,7 @@ def decision_tree(bu, cmd_input):
             print("\nGoing further down the road...")
             return None
     remove_temporary_file()
+    ls.refresh_table()
     return to_pass
 
 
